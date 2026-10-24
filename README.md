@@ -64,6 +64,15 @@ Then open http://localhost:8000/gets-me (you need to be logged in).
 
 To use PostgreSQL (Supabase) instead of SQLite, change `DB_CONNECTION=pgsql` and the `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` values in `.env`, then run `php artisan migrate --seed`.
 
+## Publishing (free: Render + Supabase)
+
+1. Create a free project on supabase.com and copy the **Session pooler** connection string (Connect > Session pooler).
+2. On render.com choose **New > Blueprint**, pick this GitHub repository and paste the connection string into `DB_URL`.
+3. Render builds the `Dockerfile`. On every start it runs the migrations and adds the demo data once if the database is empty.
+4. The site address comes from Render automatically, so share links point to it.
+
+The free plan sleeps after 15 minutes without visits; the first visit after that takes about a minute. Profile pictures are lost when the site restarts.
+
 ## Tests
 
 ```bash

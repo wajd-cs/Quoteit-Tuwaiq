@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\AchievementService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,11 +26,17 @@ class DatabaseSeeder extends Seeder
         $this->call(CategorySeeder::class);
         $cat = Category::pluck('id', 'slug');
 
-        $demo = User::factory()->create([
-            'name' => 'Demo User',
-            'email' => 'demo@quoteit.test',
-            'bio' => 'Collecting words that make me think.',
+        // users are made without factories, so seeding also works on the live server (no Faker there)
+        $makeUser = fn (string $name, string $email, ?string $bio, ?string $contact = null) => User::forceCreate([
+            'name' => $name,
+            'email' => $email,
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+            'bio' => $bio,
+            'contact_link' => $contact,
         ]);
+
+        $demo = $makeUser('Demo User', 'demo@quoteit.test', 'Collecting words that make me think.');
         $demo->interests()->sync([$cat['motivation'], $cat['wisdom'], $cat['books']]);
 
         $people = collect([
@@ -37,9 +45,7 @@ class DatabaseSeeder extends Seeder
             ['Faisal Alharbi', 'I share what moves me.', null],
             ['Reem Alzahrani', 'Poetry is my second language.', 'reem@example.com'],
             ['Omar Khalid', 'Small steps every day.', null],
-        ])->map(fn ($p) => User::factory()->create([
-            'name' => $p[0], 'bio' => $p[1], 'contact_link' => $p[2],
-        ]));
+        ])->map(fn ($p) => $makeUser($p[0], Str::slug($p[0], '.').'@quoteit.test', $p[1], $p[2]));
 
         $quotes = [
             ['The secret of getting ahead is getting started.', 'Mark Twain', 'motivation'],

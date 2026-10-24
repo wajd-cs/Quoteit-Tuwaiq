@@ -247,9 +247,9 @@ class SmartSearch
             ->when($likeTerms || $categoryIds || $goalIds || $moodIds, function ($q) use ($likeTerms, $categoryIds, $goalIds, $moodIds) {
                 $q->where(function ($q) use ($likeTerms, $categoryIds, $goalIds, $moodIds) {
                     foreach ($likeTerms as $term) {
-                        $q->orWhere('content', 'like', "%{$term}%")
-                            ->orWhere('author', 'like', "%{$term}%")
-                            ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%"));
+                        $q->orWhereLike('content', "%{$term}%")
+                            ->orWhereLike('author', "%{$term}%")
+                            ->orWhereHas('user', fn ($u) => $u->whereLike('name', "%{$term}%"));
                     }
                     if ($categoryIds) {
                         $q->orWhereIn('category_id', $categoryIds);

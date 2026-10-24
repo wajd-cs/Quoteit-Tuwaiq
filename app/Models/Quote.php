@@ -184,9 +184,10 @@ class Quote extends Model
         }
 
         return $query->where(function ($q) use ($term) {
-            $q->where('content', 'like', "%{$term}%")
-                ->orWhere('author', 'like', "%{$term}%")
-                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$term}%"));
+            // whereLike ignores upper/lower case on every database (PostgreSQL's LIKE does not)
+            $q->whereLike('content', "%{$term}%")
+                ->orWhereLike('author', "%{$term}%")
+                ->orWhereHas('user', fn ($u) => $u->whereLike('name', "%{$term}%"));
         });
     }
 
