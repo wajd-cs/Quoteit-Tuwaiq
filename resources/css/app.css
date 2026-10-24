@@ -1,0 +1,472 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+@source '../js';
+
+@font-face {
+    font-family: 'Readex Pro';
+    src: url('/fonts/ReadexPro.ttf') format('truetype');
+    font-weight: 160 700;
+    font-display: swap;
+}
+
+/* Arabic letters use Almarai, Latin letters keep the other fonts */
+@font-face {
+    font-family: 'Almarai';
+    src: url('/fonts/Almarai-Regular.ttf') format('truetype');
+    font-weight: 300 500;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+    font-family: 'Almarai';
+    src: url('/fonts/Almarai-Bold.ttf') format('truetype');
+    font-weight: 600 700;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+    font-family: 'Almarai';
+    src: url('/fonts/Almarai-ExtraBold.ttf') format('truetype');
+    font-weight: 800 900;
+    font-display: swap;
+    unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@theme {
+    --font-sans: 'Almarai', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-quote: 'Almarai', 'Readex Pro', ui-sans-serif, system-ui, sans-serif;
+
+    /* Tuwaiq club theme */
+    --color-tuwaiq-night: #10081f;
+    --color-tuwaiq-ink: #1a0f30;
+    --color-tuwaiq-purple: #432a80;
+    --color-tuwaiq-purple-light: #53398f;
+    --color-tuwaiq-lilac: #938bb8;
+    --color-tuwaiq-orange: #f2a54a;
+    --color-tuwaiq-teal: #4fc9b0;
+    --color-tuwaiq-text: #ece8f6;
+    --color-tuwaiq-like: #ef4565;
+    --color-white: #ffffff;
+}
+
+/* Reading size chosen with the A− / A+ buttons (saved per browser). */
+:root {
+    --qscale: 1;
+}
+
+@layer components {
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-tuwaiq-purple px-6 py-3 text-base font-semibold text-white shadow-md transition hover:bg-tuwaiq-purple-light focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-teal/40;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-tuwaiq-orange px-5 py-2.5 font-semibold text-tuwaiq-night shadow-md transition hover:brightness-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-orange/40;
+    }
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 px-5 py-2.5 font-medium text-tuwaiq-text transition hover:border-white/30 hover:bg-white/5 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-teal/40;
+    }
+    .label {
+        @apply mb-1 block font-semibold text-white;
+    }
+    .hint {
+        @apply mt-1 text-xs text-tuwaiq-lilac;
+    }
+    .input {
+        @apply w-full rounded-xl border border-white/15 bg-[#241438] px-4 py-2.5 text-white placeholder-gray-400 transition focus:border-tuwaiq-teal focus:ring-2 focus:ring-tuwaiq-teal/30 focus:outline-none;
+    }
+
+    /* Glass panel used for cards, forms and the profile header. */
+    .panel {
+        @apply rounded-3xl border border-white/10 bg-tuwaiq-ink/80 shadow-xl shadow-black/30 backdrop-blur-md;
+    }
+
+    .chip {
+        @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-sm font-medium whitespace-nowrap text-tuwaiq-text transition hover:border-white/35 hover:bg-white/5;
+    }
+    .chip-active {
+        @apply border-tuwaiq-teal bg-tuwaiq-teal/15 text-white;
+    }
+
+    .tab {
+        @apply rounded-xl px-4 py-2 text-sm font-semibold text-tuwaiq-lilac transition hover:text-white;
+    }
+    .tab-active {
+        @apply bg-white/10 text-white;
+    }
+
+    /* Small round action buttons under each quote. */
+    .action {
+        @apply inline-flex h-9 min-w-8 items-center justify-center gap-1 rounded-full px-1.5 text-sm text-tuwaiq-lilac transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-tuwaiq-teal;
+    }
+    .action svg {
+        @apply h-5 w-5;
+    }
+    .action[aria-pressed='true'].action-like {
+        @apply text-tuwaiq-like;
+    }
+    .action[aria-pressed='true'].action-like svg {
+        fill: currentColor;
+    }
+    .action[aria-pressed='true'].action-save {
+        @apply text-tuwaiq-teal;
+    }
+    .action[aria-pressed='true'].action-save svg {
+        fill: currentColor;
+    }
+    .action.is-speaking {
+        @apply bg-tuwaiq-teal/20 text-tuwaiq-teal;
+    }
+
+    .search-link {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-full border border-tuwaiq-teal/50 text-tuwaiq-teal transition hover:bg-tuwaiq-teal/15 active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-teal/40;
+    }
+    .search-link.is-active {
+        @apply bg-tuwaiq-teal text-tuwaiq-night;
+    }
+    .speed-chip {
+        @apply min-w-0 flex-1 rounded-full border border-white/15 px-1 py-1 text-sm sm:flex-none sm:min-w-14 sm:px-3 font-semibold text-tuwaiq-text tabular-nums transition hover:bg-white/10 active:scale-95;
+    }
+    .speed-chip[aria-pressed='true'] {
+        @apply border-tuwaiq-teal bg-tuwaiq-teal text-tuwaiq-night;
+    }
+    .menu {
+        @apply m-0 max-h-[80vh] min-w-56 overflow-y-auto rounded-2xl border border-white/15 bg-tuwaiq-ink p-2 text-tuwaiq-text shadow-2xl;
+    }
+    .menu-item {
+        @apply flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm transition hover:bg-white/10 active:scale-[.98];
+    }
+
+    /* big selectable option (radio/checkbox inside) */
+    .option-card {
+        @apply flex cursor-pointer items-center gap-3 rounded-2xl border border-white/15 p-3 transition hover:border-white/35 active:scale-[.97] has-checked:border-tuwaiq-teal has-checked:bg-tuwaiq-teal/15 has-focus-visible:ring-2 has-focus-visible:ring-tuwaiq-teal;
+    }
+    /* on/off switch row */
+    .toggle {
+        @apply flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 p-3 transition hover:border-white/30;
+    }
+    .toggle input[type='checkbox'] {
+        @apply relative h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full bg-white/20 transition focus-visible:ring-2 focus-visible:ring-tuwaiq-teal focus-visible:outline-none;
+    }
+    .toggle input[type='checkbox']::after {
+        content: '';
+        @apply absolute top-1 start-1 h-4 w-4 rounded-full bg-white transition-all;
+    }
+    .toggle input[type='checkbox']:checked {
+        @apply bg-tuwaiq-teal;
+    }
+    .toggle input[type='checkbox']:checked::after {
+        inset-inline-start: 1.5rem;
+    }
+
+    .modal {
+        @apply m-auto max-h-[90vh] w-[92%] max-w-lg overflow-y-auto rounded-3xl border border-white/10 bg-tuwaiq-ink p-0 text-tuwaiq-text shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm;
+    }
+
+    .quote-text {
+        font-family: var(--font-quote);
+        font-size: calc(1.3rem * var(--qscale));
+        font-weight: 400;
+        line-height: 1.6;
+    }
+    .quote-text:lang(ar),
+    .quote-text[dir='rtl'] {
+        line-height: 1.75;
+    }
+    .quote-text-lg {
+        font-size: calc(1.8rem * var(--qscale));
+    }
+}
+
+.site-name {
+    font: 800 1.8rem Georgia, serif;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #4fc9b0, #938bb8, #f2a54a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: transform 0.2s;
+}
+.site-name:hover {
+    transform: scale(1.06);
+}
+/* small phones: keep the whole top bar on one line */
+@media (max-width: 400px) {
+    .site-name {
+        font-size: 1.25rem;
+        letter-spacing: 0;
+    }
+    .search-link {
+        height: 2.25rem;
+        width: 2.25rem;
+    }
+}
+
+/* Toast message (copy / share feedback). */
+#toast {
+    transition: opacity 0.2s, transform 0.2s;
+}
+#toast[data-show='false'] {
+    opacity: 0;
+    transform: translate(-50%, 1rem);
+    pointer-events: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    scrollbar-width: none;
+}
+
+/* ---------- press feedback on every button ---------- */
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.action,
+.chip,
+.tab {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-ghost:active,
+.chip:active,
+.tab:active {
+    transform: scale(0.96);
+}
+.action:active {
+    transform: scale(0.88);
+}
+.did-press {
+    animation: press-glow 0.45s ease-out;
+}
+@keyframes press-glow {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-tuwaiq-teal) 55%, transparent); }
+    100% { box-shadow: 0 0 0 12px transparent; }
+}
+button[aria-busy='true'],
+a[aria-busy='true'] {
+    cursor: progress;
+    opacity: 0.75;
+}
+
+/* ---------- like: red heart that pops ---------- */
+.action-like {
+    position: relative;
+}
+.action-like.heart-pop svg {
+    animation: heart-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.action-like.heart-pop::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-tuwaiq-like);
+    animation: heart-ring 0.5s ease-out forwards;
+    pointer-events: none;
+}
+@keyframes heart-pop {
+    0% { transform: scale(1); }
+    30% { transform: scale(0.7); }
+    60% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+}
+@keyframes heart-ring {
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* keyboard focus is always visible */
+:focus-visible {
+    outline: 3px solid var(--color-tuwaiq-teal);
+    outline-offset: 2px;
+}
+main:focus {
+    outline: none;
+}
+
+/* ---------- accessibility center settings (set on <html>) ---------- */
+
+/* high contrast */
+html[data-contrast='high'] {
+    --color-tuwaiq-night: #000000;
+    --color-tuwaiq-ink: #000000;
+    --color-tuwaiq-lilac: #f0f0f0;
+    --color-tuwaiq-text: #ffffff;
+    --color-tuwaiq-purple: #6d3cff;
+    --color-tuwaiq-purple-light: #8a63ff;
+    --color-tuwaiq-orange: #ffc94d;
+    --color-tuwaiq-teal: #5ff5d6;
+}
+html[data-contrast='high'] body {
+    background-image: none !important;
+    background-color: #000;
+}
+html[data-contrast='high'] .panel,
+html[data-contrast='high'] .input,
+html[data-contrast='high'] .chip,
+html[data-contrast='high'] .btn-ghost,
+html[data-contrast='high'] .option-card,
+html[data-contrast='high'] .toggle,
+html[data-contrast='high'] .modal,
+html[data-contrast='high'] .menu,
+html[data-contrast='high'] #speech-bar {
+    border-color: #ffffff !important;
+    border-width: 2px;
+    backdrop-filter: none;
+    background-color: #000;
+}
+html[data-contrast='high'] .text-tuwaiq-lilac,
+html[data-contrast='high'] .hint {
+    color: #f0f0f0 !important;
+}
+html[data-contrast='high'] .site-name {
+    -webkit-text-fill-color: #fff;
+    background: none;
+}
+html[data-contrast='high'] :focus-visible {
+    outline: 4px solid #ffff00;
+}
+
+/* colour-blind friendly palettes (Okabe-Ito colours) */
+html[data-colors='protanopia'] {
+    --color-tuwaiq-orange: #e69f00;
+    --color-tuwaiq-teal: #56b4e9;
+    --color-tuwaiq-purple: #0060a0;
+    --color-tuwaiq-purple-light: #0072b2;
+    --color-tuwaiq-like: #e69f00;
+}
+html[data-colors='deuteranopia'] {
+    --color-tuwaiq-orange: #f0e442;
+    --color-tuwaiq-teal: #56b4e9;
+    --color-tuwaiq-purple: #0060a0;
+    --color-tuwaiq-purple-light: #0072b2;
+    --color-tuwaiq-like: #f0e442;
+}
+html[data-colors='tritanopia'] {
+    --color-tuwaiq-orange: #d55e00;
+    --color-tuwaiq-teal: #009e73;
+    --color-tuwaiq-purple: #8a2d5c;
+    --color-tuwaiq-purple-light: #cc79a7;
+    --color-tuwaiq-like: #d55e00;
+}
+html[data-colors='mono'] {
+    filter: grayscale(1);
+}
+
+/* underline links */
+html[data-links='underline'] main a,
+html[data-links='underline'] footer a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* easier reading spacing */
+html[data-spacing='wide'] body {
+    letter-spacing: 0.03em;
+    word-spacing: 0.12em;
+}
+html[data-spacing='wide'] p,
+html[data-spacing='wide'] li,
+html[data-spacing='wide'] .quote-text {
+    line-height: 2 !important;
+}
+
+/* reduce motion */
+html[data-motion='reduce'] *,
+html[data-motion='reduce'] *::before,
+html[data-motion='reduce'] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* lift the floating button above the reading bar */
+html[data-speaking='1'] .fab {
+    bottom: 8.5rem;
+}
+
+/* quote of the day card */
+.quote-of-day {
+    background-image: linear-gradient(to bottom right, rgb(67 42 128 / 0.8), rgb(26 15 48 / 0.9));
+}
+html[data-theme='light'] .quote-of-day {
+    background-image: linear-gradient(to bottom right, #e3d8fb, #ffffff);
+    border-color: #d8ccf6;
+}
+
+/* ---------- light mode ---------- */
+/* the same Tuwaiq colours on a light background; dark stays the default */
+html[data-theme='light'] {
+    color-scheme: light;
+    --color-tuwaiq-night: #f6f3fc;
+    --color-tuwaiq-ink: #ffffff;
+    --color-tuwaiq-text: #2a2140;
+    --color-white: #1d1530;
+    --color-tuwaiq-lilac: #6b6385;
+    --color-tuwaiq-teal: #11806b;
+    --color-tuwaiq-purple-light: #5b3fa0;
+}
+html[data-theme='light'] body {
+    background-image: linear-gradient(to bottom, #f6f3fc, #efe9fb) !important;
+}
+html[data-theme='light'] nav[aria-label] {
+    background-color: rgb(255 255 255 / 0.9);
+}
+html[data-theme='light'] .panel {
+    box-shadow: 0 6px 24px rgb(67 42 128 / 0.08);
+    backdrop-filter: none;
+}
+html[data-theme='light'] .btn-primary,
+html[data-theme='light'] .btn-primary * {
+    color: #ffffff;
+}
+html[data-theme='light'] .btn-secondary,
+html[data-theme='light'] .fab {
+    color: #1d1530;
+}
+html[data-theme='light'] .text-tuwaiq-orange {
+    color: #b4610a;
+}
+html[data-theme='light'] .input,
+html[data-theme='light'] select {
+    background-color: #ffffff;
+    border-color: #ddd6f3;
+    color: #1d1530;
+}
+html[data-theme='light'] [class*='from-tuwaiq-purple'] {
+    background-image: linear-gradient(135deg, #e6dcfb, #ffffff) !important;
+}
+html[data-theme='light'] #toast {
+    background-color: #1d1530;
+    color: #ffffff;
+}
+
+/* the right logo for each mode; the button shows the mode you can switch to */
+.logo-light,
+.theme-icon-moon {
+    display: none;
+}
+html[data-theme='light'] .logo-dark,
+html[data-theme='light'] .theme-icon-sun {
+    display: none;
+}
+html[data-theme='light'] .logo-light,
+html[data-theme='light'] .theme-icon-moon {
+    display: block;
+}
