@@ -12,13 +12,17 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\SignupController;
+use App\Http\Controllers\StoryController;
 use App\Http\Controllers\StudioController;
+use App\Http\Controllers\TranslationController;
 use Illuminate\Support\Facades\Route;
 
 // public pages
@@ -35,6 +39,7 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 Route::get('/accessibility', [AccessibilityController::class, 'index'])->name('accessibility');
 Route::post('/quotes/{quote}/shared', [ShareController::class, 'store'])->middleware('throttle:60,1')->name('quotes.shared');
 Route::put('/accessibility', [AccessibilityController::class, 'update'])->name('accessibility.update');
+Route::get('/quotes/{quote}/translate', [TranslationController::class, 'show'])->middleware('throttle:30,1')->name('quotes.translate');
 
 // guests only
 Route::middleware('guest')->group(function () {
@@ -64,6 +69,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
     Route::post('/users/{user}/follow', [FollowController::class, 'toggle'])->name('users.follow');
+
+    // stories
+    Route::post('/stories', [StoryController::class, 'store'])->name('stories.store');
+    Route::post('/stories/{story}/like', [StoryController::class, 'like'])->name('stories.like');
+    Route::delete('/stories/{story}', [StoryController::class, 'destroy'])->name('stories.destroy');
+
+    // messages
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/with/{user}', [MessageController::class, 'start'])->name('messages.start');
+    Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{conversation}', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/{conversation}/new', [MessageController::class, 'poll'])->name('messages.poll');
+
+    // notifications
+    Route::post('/notifications/seen', [NotificationController::class, 'seen'])->name('notifications.seen');
+    Route::get('/live', [NotificationController::class, 'live'])->name('live');
 
     // quote that gets me
     Route::get('/gets-me', [GetsMeController::class, 'index'])->name('gets-me');

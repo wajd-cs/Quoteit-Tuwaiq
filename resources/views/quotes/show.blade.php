@@ -36,13 +36,14 @@
                 @auth
                     @unless ($quote->isOwnedBy())
                         <x-follow-button :user="$quote->user" />
+                        <x-message-button :user="$quote->user" />
                     @endunless
                 @endauth
             </div>
         </section>
 
         {{-- Comments (opened once a scheduled quote is published) --}}
-        @unless ($quote->isScheduled())
+        @unless ($quote->isHidden())
         <section id="comments" class="mt-10" aria-label="{{ __('Comments') }}">
             <h2 class="text-xl font-bold text-white">{{ __('Comments') }} <span class="text-tuwaiq-lilac">({{ $comments->count() }})</span></h2>
 

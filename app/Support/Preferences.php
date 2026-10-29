@@ -17,7 +17,7 @@ class Preferences
         'reduce_motion' => false,
         'underline_links' => false,
         'readable_spacing' => false,
-        'theme' => 'dark',          // dark | light
+        'tour_done' => false,       // the first-visit tour was shown
     ];
 
     public const OPTIONS = [
@@ -25,7 +25,6 @@ class Preferences
         'colors' => ['default', 'protanopia', 'deuteranopia', 'tritanopia', 'mono'],
         'text_scale' => [0.85, 1, 1.15, 1.3, 1.5, 1.75],
         'speech_rate' => [0.75, 1, 1.25, 1.5, 2],
-        'theme' => ['dark', 'light'],
     ];
 
     public static function for(?User $user): array

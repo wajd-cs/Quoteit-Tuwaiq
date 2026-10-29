@@ -3,88 +3,107 @@
 @php
     $otherLocale = app()->getLocale() === 'ar' ? 'en' : 'ar';
     $prefs = \App\Support\Preferences::for(auth()->user());
-    $themeLabel = $prefs['theme'] === 'light' ? __('Switch to dark mode') : __('Switch to light mode');
+    $me = auth()->user();
+    if ($me) {
+        $feedService = app(\App\Services\NotificationFeed::class);
+        $feed = $feedService->for($me);
+        $unreadMessages = $feedService->unreadMessages($me);
+    }
 @endphp
 
 <nav class="sticky top-0 z-50 border-b border-white/10 bg-tuwaiq-night/85 backdrop-blur-md" aria-label="{{ __('Main') }}">
     <div class="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:px-4">
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3" aria-label="{{ __('QuoteIt home') }}">
-            <span class="hidden lg:block">
-                <img src="{{ asset('images/logo.png') }}" class="logo-dark h-10 w-auto" alt="Tuwaiq Club">
-                <img src="{{ asset('images/logo-light.png') }}" class="logo-light h-10 w-auto" alt="Tuwaiq Club">
-            </span>
+            <img src="{{ asset('images/logo.png') }}" class="hidden h-10 w-auto lg:block" alt="Tuwaiq Club">
             <span class="site-name">QuoteIt</span>
         </a>
 
         <div class="ms-auto flex items-center gap-1 sm:gap-1.5">
-            <a href="{{ route('home') }}" class="tab hidden lg:inline-flex {{ $page === 'Home' ? 'tab-active' : '' }}">{{ __('Home') }}</a>
-            <a href="{{ route('gets-me') }}" class="tab hidden lg:inline-flex {{ $page === 'Gets me' ? 'tab-active' : '' }}">{{ __('Gets me') }}</a>
-            <a href="{{ route('insights') }}" class="tab hidden md:inline-flex {{ $page === 'Insights' ? 'tab-active' : '' }}">{{ __('Insights') }}</a>
+            {{-- pages (laptops; phones use the bar at the bottom) --}}
+            <a href="{{ route('home') }}" class="tab hidden lg:inline-flex {{ $page === 'Home' ? 'tab-active' : '' }}" data-tour="home">{{ __('Home') }}</a>
+            <a href="{{ route('gets-me') }}" class="tab hidden lg:inline-flex {{ $page === 'Gets me' ? 'tab-active' : '' }}" data-tour="gets-me">{{ __('Gets me') }}</a>
+            @auth
+                {{-- an envelope on smaller laptops, the word on wide screens --}}
+                <a href="{{ route('messages.index') }}" class="tab relative hidden items-center gap-1.5 lg:inline-flex {{ $page === 'Messages' ? 'tab-active' : '' }}" aria-label="{{ __('Messages') }}" title="{{ __('Messages') }}" data-tour="messages">
+                    <x-icon name="chat" class="h-5 w-5 xl:hidden" />
+                    <span class="hidden xl:inline">{{ __('Messages') }}</span>
+                    <span class="count-badge max-xl:absolute max-xl:-top-1 max-xl:-end-1" data-live="messages" @if (! $unreadMessages) hidden @endif>{{ $unreadMessages }}</span>
+                </a>
+            @endauth
+            <a href="{{ route('insights') }}" class="tab hidden lg:inline-flex {{ $page === 'Insights' ? 'tab-active' : '' }}" data-tour="insights">{{ __('Insights') }}</a>
 
             {{-- smart search on its own, so it stands out --}}
-            <a href="{{ route('search') }}" class="search-link {{ $page === 'Search' ? 'is-active' : '' }}" title="{{ __('Smart search') }}" aria-label="{{ __('Smart search') }}">
+            <a href="{{ route('search') }}" class="search-link {{ $page === 'Search' ? 'is-active' : '' }}" title="{{ __('Smart search') }}" aria-label="{{ __('Smart search') }}" data-tour="search">
                 <x-icon name="search" />
             </a>
 
             <span class="mx-1 hidden h-6 w-px bg-white/15 sm:block" aria-hidden="true"></span>
 
-            {{-- on phones the accessibility center is in the menu --}}
-            <a href="{{ route('accessibility') }}" class="action hidden sm:inline-flex {{ $page === 'Accessibility' ? 'bg-white/10 text-white' : '' }}" title="{{ __('Accessibility center') }}" aria-label="{{ __('Accessibility center') }}">
-                <x-icon name="accessibility" />
-            </a>
+            @auth
+                {{-- bell --}}
+                <button type="button" popovertarget="bell-menu" class="action relative h-10 w-10" aria-label="{{ __('Notifications') }}" title="{{ __('Notifications') }}" data-bell data-tour="bell">
+                    <x-icon name="bell" />
+                    <span class="count-badge absolute -top-1 -end-1.5" data-live="notifications" @if (! $feed['count']) hidden @endif>{{ $feed['count'] }}</span>
+                </button>
+                <div id="bell-menu" popover class="menu fixed top-16 end-3 bottom-auto start-auto w-[min(380px,calc(100vw-24px))]" data-seen-url="{{ route('notifications.seen') }}">
+                    <div class="flex items-center justify-between px-3 pt-1 pb-2">
+                        <p class="font-bold text-white">{{ __('Notifications') }}</p>
+                        <a href="{{ route('profile.edit') }}#notifications" class="text-xs text-tuwaiq-teal hover:underline">{{ __('Settings') }}</a>
+                    </div>
+                    @forelse ($feed['items'] as $item)
+                        <a href="{{ $item['type'] === 'quote' ? route('quotes.show', $item['quote']) : route('messages.show', $item['message']->conversation_id) }}"
+                            @class(['flex gap-3 rounded-2xl p-2.5 transition hover:bg-white/5', 'bg-tuwaiq-teal/10' => $item['new']])>
+                            <x-avatar :user="$item['user']" size="sm" />
+                            <span class="min-w-0 flex-1 text-sm">
+                                <span class="block"><b class="text-white">{{ $item['user']->name }}</b>
+                                    {{ $item['type'] === 'quote' ? __('posted a new quote') : __('sent you a message') }}</span>
+                                <span class="block truncate text-tuwaiq-text" dir="auto">{{ $item['type'] === 'quote' ? $item['quote']->content : $item['message']->body }}</span>
+                                <span class="block text-xs text-tuwaiq-lilac">{{ $item['at']->diffForHumans() }}</span>
+                            </span>
+                            @if ($item['new'])<span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-tuwaiq-teal" aria-label="{{ __('New') }}"></span>@endif
+                        </a>
+                    @empty
+                        <p class="px-3 py-6 text-center text-sm text-tuwaiq-lilac">{{ __('Nothing new yet.') }}</p>
+                    @endforelse
+                    @unless ($me->notify_new_quotes)
+                        <p class="mt-1 border-t border-white/10 px-3 pt-2 pb-1 text-xs text-tuwaiq-lilac">
+                            {{ __('Want to know when people you follow post?') }}
+                            <a href="{{ route('profile.edit') }}#notifications" class="font-semibold text-tuwaiq-teal hover:underline">{{ __('Turn it on') }}</a>
+                        </p>
+                    @endunless
+                </div>
+            @endauth
 
-            {{-- light / dark --}}
-            <button type="button" class="action" data-theme-toggle aria-label="{{ $themeLabel }}" title="{{ $themeLabel }}">
-                <x-icon name="sun" class="theme-icon-sun" />
-                <x-icon name="moon" class="theme-icon-moon" />
-            </button>
 
             <a href="{{ route('locale', $otherLocale) }}" class="rounded-full border border-white/15 px-3 py-1.5 text-sm font-semibold hover:bg-white/10" lang="{{ $otherLocale }}"
-                title="{{ $otherLocale === 'ar' ? 'العربية' : 'English' }}">{{ $otherLocale === 'ar' ? 'ع' : 'EN' }}</a>
+                title="{{ $otherLocale === 'ar' ? 'العربية' : 'English' }}" data-tour="language">{{ $otherLocale === 'ar' ? 'ع' : 'EN' }}</a>
 
             @auth
-                <button type="button" popovertarget="user-menu" class="rounded-full p-0.5 hover:bg-white/10" aria-label="{{ __('Account menu') }}" title="{{ auth()->user()->name }}">
-                    <x-avatar :user="auth()->user()" size="sm" />
+                <button type="button" popovertarget="user-menu" class="hidden rounded-full p-0.5 hover:bg-white/10 lg:block" aria-label="{{ __('Account menu') }}" title="{{ $me->name }}" data-tour="account">
+                    <x-avatar :user="$me" size="sm" />
                 </button>
-                <div id="user-menu" popover class="menu fixed top-16 end-4 bottom-auto start-auto">
-                    <p class="mb-1 truncate border-b border-white/10 px-3 pt-1 pb-2 text-sm font-semibold text-white">{{ auth()->user()->name }}</p>
-                    <a href="{{ route('home') }}" class="menu-item lg:hidden">{{ __('Home') }}</a>
-                    <a href="{{ route('users.show', auth()->user()) }}" class="menu-item">{{ __('My profile & stats') }}</a>
+                <div id="user-menu" popover class="menu fixed top-16 end-4 bottom-auto start-auto max-lg:top-auto max-lg:bottom-20">
+                    <p class="mb-1 truncate border-b border-white/10 px-3 pt-1 pb-2 text-sm font-semibold text-white">{{ $me->name }}</p>
+                    <a href="{{ route('users.show', $me) }}" class="menu-item">{{ __('My profile & stats') }}</a>
                     <a href="{{ route('favorites') }}" class="menu-item">{{ __('My favourites') }}</a>
                     <a href="{{ route('recommendations') }}" class="menu-item">{{ __('Recommended for you') }}</a>
                     <a href="{{ route('achievements') }}" class="menu-item">{{ __('Achievements') }}</a>
-                    <a href="{{ route('gets-me') }}" class="menu-item">{{ __('Quote That Gets Me') }}</a>
                     <a href="{{ route('gets-me.history') }}" class="menu-item">{{ __('My mood history') }}</a>
-                    <a href="{{ route('search') }}" class="menu-item">{{ __('Smart search') }}</a>
-                    <a href="{{ route('home', ['tab' => 'for-you']) }}" class="menu-item">{{ __('For you') }}</a>
+                    <a href="{{ route('insights') }}" class="menu-item lg:hidden">{{ __('Insights dashboard') }}</a>
                     <a href="{{ route('profile.edit') }}" class="menu-item">{{ __('Edit profile & interests') }}</a>
                     <a href="{{ route('accessibility') }}" class="menu-item">{{ __('Accessibility center') }}</a>
-                    <a href="{{ route('insights') }}" class="menu-item">{{ __('Insights dashboard') }}</a>
+                    <button type="button" class="menu-item" data-tour-start>{{ __('Show the tour again') }}</button>
                     <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-white/10 pt-1">
                         @csrf
                         <button type="submit" class="menu-item text-tuwaiq-orange">{{ __('Log out') }}</button>
                     </form>
                 </div>
             @else
-                {{-- phones and tablets: the page links live in a small menu --}}
-                <button type="button" popovertarget="guest-menu" class="action lg:hidden" aria-label="{{ __('Menu') }}" title="{{ __('Menu') }}">
-                    <x-icon name="menu" />
-                </button>
-                <div id="guest-menu" popover class="menu fixed top-16 end-4 bottom-auto start-auto">
-                    <a href="{{ route('home') }}" class="menu-item">{{ __('Home') }}</a>
-                    <a href="{{ route('search') }}" class="menu-item">{{ __('Smart search') }}</a>
-                    <a href="{{ route('insights') }}" class="menu-item">{{ __('Insights dashboard') }}</a>
-                    <a href="{{ route('gets-me') }}" class="menu-item">{{ __('Quote That Gets Me') }}</a>
-                    <a href="{{ route('accessibility') }}" class="menu-item">{{ __('Accessibility center') }}</a>
-                    @if ($page !== 'Log In')
-                        <a href="{{ route('login') }}" class="menu-item border-t border-white/10 text-tuwaiq-orange">{{ __('Log in') }}</a>
-                    @endif
-                </div>
                 @if ($page !== 'Log In')
-                    <a href="{{ route('login') }}" class="btn-ghost hidden px-4 py-2 text-sm whitespace-nowrap sm:inline-flex">{{ __('Log in') }}</a>
+                    <a href="{{ route('login') }}" class="btn-ghost hidden px-4 py-2 text-sm whitespace-nowrap lg:inline-flex">{{ __('Log in') }}</a>
                 @endif
                 @if ($page !== 'Sign Up')
-                    <a href="{{ route('signup') }}" class="btn-primary px-2.5 py-2 text-sm whitespace-nowrap sm:px-4">{{ __('Sign up') }}</a>
+                    <a href="{{ route('signup') }}" class="btn-primary px-2.5 py-2 text-sm whitespace-nowrap sm:px-4" data-tour="signup">{{ __('Sign up') }}</a>
                 @endif
             @endauth
         </div>

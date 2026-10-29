@@ -28,11 +28,11 @@ test('a user can share a quote with an author and category', function () {
         ->and($quote->category_id)->toBe($category->id);
 });
 
-test('quote length must be between 3 and 255 characters', function () {
+test('quote length must be between 3 and 155 characters', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->post('/', ['content' => 'Hi'])->assertSessionHasErrors('content');
-    $this->actingAs($user)->post('/', ['content' => str_repeat('a', 256)])->assertSessionHasErrors('content');
+    $this->actingAs($user)->post('/', ['content' => str_repeat('a', 156)])->assertSessionHasErrors('content');
     expect(Quote::count())->toBe(0);
 });
 

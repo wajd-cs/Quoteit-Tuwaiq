@@ -11,6 +11,7 @@ fi
 php artisan config:cache
 php artisan view:cache
 php artisan migrate --force
-php artisan quoteit:demo-data
+# demo data is filled in the background, so the site opens right away
+php artisan quoteit:demo-data &
 
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"

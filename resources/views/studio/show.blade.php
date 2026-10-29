@@ -45,6 +45,14 @@
         <h1 class="text-3xl font-bold text-white sm:text-4xl">{{ __('Quote design studio') }}</h1>
         <p class="mt-1 max-w-2xl text-tuwaiq-lilac">{{ __('Change the background, colours and font, then save the quote as an image or share it.') }}</p>
 
+        @if (in_array(request('for'), ['instagram', 'snapchat'], true))
+            {{-- came from the share window: story size is picked for them --}}
+            <p class="mt-4 flex items-center gap-3 rounded-2xl border border-tuwaiq-teal/40 bg-tuwaiq-teal/10 p-3 text-sm" role="note">
+                <x-brand-tile :name="request('for')" />
+                <span>{{ __('Pick a look, then press “Share image” and choose :app. On a computer the image is saved so you can post it from the app.', ['app' => request('for') === 'instagram' ? __('Instagram') : __('Snapchat')]) }}</span>
+            </p>
+        @endif
+
         <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5" data-studio data-config="{{ json_encode($studioData) }}">
             {{-- preview --}}
             <div class="lg:col-span-3">
@@ -76,7 +84,7 @@
                     <div class="grid grid-cols-3 gap-2 text-sm">
                         @foreach (['square' => [__('Square'), '1080×1080'], 'story' => [__('Story'), '1080×1920'], 'wide' => [__('Wide'), '1200×630']] as $value => [$label, $dims])
                             <label class="option-card flex-col items-center gap-0 p-2 text-center">
-                                <input type="radio" name="size" value="{{ $value }}" class="sr-only" @checked($value === 'square')>
+                                <input type="radio" name="size" value="{{ $value }}" class="sr-only" @checked($value === (in_array(request('for'), ['instagram', 'snapchat'], true) ? 'story' : 'square'))>
                                 <span class="font-semibold text-white">{{ $label }}</span>
                                 <span class="text-[11px] text-tuwaiq-lilac tabular-nums">{{ $dims }}</span>
                             </label>

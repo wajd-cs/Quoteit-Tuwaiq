@@ -6,6 +6,7 @@ use App\Http\Requests\QuoteRequest;
 use App\Models\Category;
 use App\Models\Quote;
 use App\Services\RecommendationService;
+use App\Services\StoryFeed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -59,6 +60,7 @@ class QuoteController extends Controller
 
         return view('welcome', [
             'page' => 'Home',
+            'storyGroups' => app(StoryFeed::class)->groups(Auth::user()),
             'quotes' => $quotes,
             'tab' => $tab,
             'search' => $search,
@@ -86,10 +88,18 @@ class QuoteController extends Controller
 
     public function store(QuoteRequest $request)
     {
+        $draft = $request->wantsDraft();
         $quote = Auth::user()->quotes()->create($request->safe()->only(['content', 'author', 'category_id']) + [
-            'published_at' => $request->publishAt() ?? now(),
+            'is_draft' => $draft,
+            'published_at' => $draft ? null : ($request->publishAt() ?? now()),
+            'style' => $request->style(),
         ]);
         $this->syncFeelings($quote, $request);
+
+        if ($draft) {
+            return redirect()->route('users.show', [Auth::user(), 'tab' => 'drafts'])
+                ->with('status', __('Saved as a draft. Only you can see it.'));
+        }
 
         if ($quote->isScheduled()) {
             return redirect()->route('users.show', [Auth::user(), 'tab' => 'scheduled'])
@@ -107,25 +117,39 @@ class QuoteController extends Controller
     {
         abort_unless($quote->isOwnedBy(), 403);
 
-        $data = $request->safe()->only(['content', 'author', 'category_id']);
+        $data = $request->safe()->only(['content', 'author', 'category_id']) + ['style' => $request->style()];
         // the time can only change while the quote is still waiting
         if ($quote->isScheduled() && $request->has('schedule_section')) {
+            $data['published_at'] = $request->publishAt() ?? now();
+        }
+        // a draft stays a draft until "Publish" is pressed
+        $publishingDraft = $quote->is_draft && ! $request->wantsDraft();
+        if ($publishingDraft) {
+            $data['is_draft'] = false;
             $data['published_at'] = $request->publishAt() ?? now();
         }
         $quote->update($data);
         $this->syncFeelings($quote, $request);
 
+        if ($publishingDraft) {
+            $this->rewardBadges($request);
+
+            return $quote->isScheduled()
+                ? redirect()->route('users.show', [Auth::user(), 'tab' => 'scheduled'])->with('status', __('Your quote is scheduled. It will be published on :date.', ['date' => $quote->published_at->translatedFormat('j M Y · g:i A')]))
+                : redirect()->route('quotes.show', $quote)->with('status', __('Your quote is live!'));
+        }
+
         return redirect()->to(url()->previous(route('home')).'#quote-'.$quote->id)
             ->with('status', __('Quote updated.'));
     }
 
-    /** Publish a scheduled quote right away. */
+    /** Publish a scheduled quote or a draft right away. */
     public function publishNow(Request $request, Quote $quote)
     {
         abort_unless($quote->isOwnedBy(), 403);
 
-        if ($quote->isScheduled()) {
-            $quote->update(['published_at' => now()]);
+        if ($quote->isHidden()) {
+            $quote->update(['published_at' => now(), 'is_draft' => false]);
             $this->rewardBadges($request);
         }
 

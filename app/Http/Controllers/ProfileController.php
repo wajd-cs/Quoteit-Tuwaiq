@@ -25,7 +25,7 @@ class ProfileController extends Controller
         $tab = $request->query('tab', 'quotes');
 
         // saved tab is private
-        if (in_array($tab, ['saved', 'scheduled'], true) && ! $isMe) {
+        if (in_array($tab, ['saved', 'scheduled', 'drafts'], true) && ! $isMe) {
             $tab = 'quotes';
         }
 
@@ -65,11 +65,12 @@ class ProfileController extends Controller
                 ->whereIn('id', $user->bookmarkedQuotes()->select('quotes.id'))
                 ->sortBy('latest'),
             'scheduled' => Quote::withCardData()->scheduledBy($user)->orderBy('quotes.published_at'),
+            'drafts' => Quote::withCardData()->draftsBy($user)->orderByDesc('quotes.updated_at'),
             default => Quote::withCardData()->where('user_id', $user->id)->sortBy('latest'),
         };
 
         return view('profile.show', [
-            'page' => 'Profile',
+            'page' => $isMe ? 'Profile' : '',
             'user' => $user->load('interests'),
             'isMe' => $isMe,
             'isFollowing' => Auth::check() && ! $isMe && Auth::user()->isFollowing($user),
@@ -77,8 +78,9 @@ class ProfileController extends Controller
             'taste' => $taste,
             'badges' => $achievements->earnedBadges($user),
             'points' => $achievements->points($user),
-            'tab' => in_array($tab, ['quotes', 'liked', 'saved', 'scheduled']) ? $tab : 'quotes',
+            'tab' => in_array($tab, ['quotes', 'liked', 'saved', 'scheduled', 'drafts']) ? $tab : 'quotes',
             'scheduledCount' => $isMe ? Quote::scheduledBy($user)->count() : 0,
+            'draftsCount' => $isMe ? Quote::draftsBy($user)->count() : 0,
             'weekly' => $isMe ? app(WeeklySummary::class)->for($user) : null,
             'quotes' => $quotes->paginate(12)->withQueryString(),
         ]);
@@ -95,7 +97,7 @@ class ProfileController extends Controller
     public function update(ProfileRequest $request)
     {
         $user = $request->user();
-        $user->update($request->safe()->only(['name', 'bio', 'contact_link']));
+        $user->update($request->safe()->only(['name', 'bio', 'contact_link']) + ['notify_new_quotes' => $request->boolean('notify_new_quotes')]);
         $user->interests()->sync($request->validated('interests', []));
 
         // profile picture

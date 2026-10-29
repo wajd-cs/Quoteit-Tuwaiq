@@ -12,7 +12,7 @@ class CommentController extends Controller
     public function store(CommentRequest $request, Quote $quote)
     {
         // a scheduled quote opens for likes, saves and comments once it is published
-        abort_if($quote->isScheduled(), 403);
+        abort_if($quote->isHidden(), 403);
 
         $comment = Auth::user()->comments()->create([
             'quote_id' => $quote->id,

@@ -15,13 +15,11 @@
     $langTotal = max(1, array_sum($languages));
     $arPct = (int) round($languages['Arabic'] / $langTotal * 100);
 @endphp
-<!DOCTYPE html>
-<html lang="{{ $locale }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
+@extends('Layout.print')
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('QuoteIt insights report') }} · {{ $generatedAt->format('Y-m-d') }}</title>
+@section('title', __('QuoteIt insights report') . ' · ' . $generatedAt->format('Y-m-d'))
+
+@push('styles')
     <style>
         @font-face { font-family: 'Almarai'; src: url('{{ asset('fonts/Almarai-Regular.ttf') }}'); font-weight: 400; }
         @font-face { font-family: 'Almarai'; src: url('{{ asset('fonts/Almarai-Bold.ttf') }}'); font-weight: 700; }
@@ -73,9 +71,9 @@
             .sheet { padding: 0; max-width: none; }
         }
     </style>
-</head>
+@endpush
 
-<body>
+@section('toolbar')
     <div class="toolbar">
         <button type="button" class="primary" onclick="window.print()">{{ __('Download PDF') }}</button>
         <a class="ghost" href="{{ route('insights', $filters['query']) }}">{{ __('Back to dashboard') }}</a>
@@ -83,7 +81,9 @@
         <p>{{ __('In the print window choose “Save as PDF”.') }}</p>
     </div>
 
-    <main class="sheet">
+@endsection
+
+@section('content')
         <header>
             <div>
                 <h1>{{ __('QuoteIt insights report') }}</h1>
@@ -223,11 +223,4 @@
             {{ __('How the numbers are counted: quotes are counted by the date they were shared; likes, comments and saves by the date they happened. Times are in Riyadh time.') }}
             · QuoteIt · <span dir="ltr">&copy; {{ now()->year }} Wajd Alluhaibi</span>
         </footer>
-    </main>
-
-    @if (request('print'))
-        <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
-    @endif
-</body>
-
-</html>
+@endsection

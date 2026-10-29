@@ -35,6 +35,7 @@ class ProfileRequest extends FormRequest
             ],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
+            'notify_new_quotes' => ['nullable', 'boolean'],
             'interests' => ['nullable', 'array'],
             'interests.*' => ['integer', 'exists:categories,id'],
         ];

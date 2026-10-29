@@ -5,8 +5,11 @@
     $quoteUrl = route('quotes.show', $quote);
     $shareText = $quote->shareText();
     $isArabic = (bool) preg_match('/\p{Arabic}/u', $quote->content);
-    $postedAt = $quote->published_at ?? $quote->created_at;
+    $postedAt = $quote->published_at ?? $quote->updated_at;
+    $draft = (bool) $quote->is_draft;
     $scheduled = $quote->isScheduled();
+    // not live yet (draft or scheduled): no likes, saves, comments or sharing
+    $hidden = $draft || $scheduled;
     $sharedUrl = route('quotes.shared', $quote);
 @endphp
 
@@ -31,14 +34,29 @@
 
     <a href="{{ $quoteUrl }}" class="block flex-1">
         <blockquote>
-            <p class="quote-text {{ $large ? 'quote-text-lg' : '' }} text-white" dir="{{ $isArabic ? 'rtl' : 'ltr' }}" lang="{{ $isArabic ? 'ar' : 'en' }}">{{ $isArabic ? '«' : '“' }}{{ $quote->content }}{{ $isArabic ? '»' : '”' }}</p>
+            <p class="quote-text {{ $large ? 'quote-text-lg' : '' }} {{ $quote->styleClasses() }} text-white" dir="{{ $isArabic ? 'rtl' : 'ltr' }}" lang="{{ $isArabic ? 'ar' : 'en' }}">{{ $isArabic ? '«' : '“' }}{{ $quote->content }}{{ $isArabic ? '»' : '”' }}</p>
             @if ($quote->author)
                 <footer class="mt-3 text-sm text-tuwaiq-orange" dir="auto">— {{ $quote->author }}</footer>
             @endif
         </blockquote>
     </a>
 
-    @if ($scheduled)
+    {{-- translation shows here after pressing the translate button --}}
+    <p class="mt-3 hidden rounded-2xl bg-white/5 p-3 text-sm text-tuwaiq-text" data-translation-box dir="{{ $isArabic ? 'ltr' : 'rtl' }}" lang="{{ $isArabic ? 'en' : 'ar' }}" aria-live="polite"></p>
+
+    @if ($draft)
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-tuwaiq-lilac/40 bg-tuwaiq-lilac/10 p-3 text-sm">
+            <span class="flex items-center gap-2">
+                <x-icon name="draft" class="h-5 w-5 text-tuwaiq-lilac" />
+                <span>{{ __('Draft') }}
+                    <span class="block text-xs text-tuwaiq-lilac">{{ __('Only you can see it. Edit it, then publish when it is ready.') }}</span></span>
+            </span>
+            <form method="POST" action="{{ route('quotes.publish-now', $quote) }}">
+                @csrf
+                <button type="submit" class="btn-secondary px-3 py-1.5 text-sm">{{ __('Publish now') }}</button>
+            </form>
+        </div>
+    @elseif ($scheduled)
         <div class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-tuwaiq-orange/40 bg-tuwaiq-orange/10 p-3 text-sm">
             <span class="flex items-center gap-2">
                 <x-icon name="clock" class="h-5 w-5 text-tuwaiq-orange" />
@@ -54,8 +72,8 @@
 
     {{-- Actions --}}
     <div class="mt-4 flex flex-wrap items-center gap-0.5 border-t border-white/10 pt-3">
-        {{-- no likes, saves or comments until a scheduled quote goes live --}}
-        @if ($scheduled)
+        {{-- no likes, saves or comments until the quote goes live --}}
+        @if ($hidden)
         @elseauth
             <form method="POST" action="{{ route('quotes.like', $quote) }}" data-toggle="like">
                 @csrf
@@ -76,7 +94,7 @@
             <a href="{{ route('login') }}" class="action" title="{{ __('Log in to save') }}" aria-label="{{ __('Log in to save') }}"><x-icon name="bookmark" /></a>
         @endif
 
-        @unless ($scheduled)
+        @unless ($hidden)
             <a href="{{ $quoteUrl }}#comments" class="action" title="{{ __('Comments') }}">
                 <x-icon name="chat" /> <span>{{ $quote->comments_count }}</span><span class="sr-only">{{ __('comments') }}</span>
             </a>
@@ -86,11 +104,15 @@
             </button>
         @endunless
 
-        <button type="button" class="action" data-speak="{{ $quote->content }}{{ $quote->author ? '. ' . $quote->author : '' }}" data-lang="{{ $isArabic ? 'ar-SA' : 'en-US' }}" title="{{ __('Listen') }}" aria-label="{{ __('Read the quote aloud') }}">
+        <button type="button" class="action" data-speak="{{ $quote->content }}" data-speak-author="{{ $quote->author }}" data-lang="{{ $isArabic ? 'ar-SA' : 'en-US' }}" title="{{ __('Listen') }}" aria-label="{{ __('Read the quote aloud') }}">
             <x-icon name="speaker" />
         </button>
 
-        @unless ($scheduled)
+        <button type="button" class="action" data-translate="{{ route('quotes.translate', $quote) }}" title="{{ $isArabic ? __('Translate to English') : __('Translate to Arabic') }}" aria-label="{{ $isArabic ? __('Translate to English') : __('Translate to Arabic') }}">
+            <x-icon name="translate" />
+        </button>
+
+        @unless ($hidden)
             <a href="{{ route('studio', $quote) }}" class="action" title="{{ __('Design as an image') }}" aria-label="{{ __('Design as an image') }}">
                 <x-icon name="palette" />
             </a>
@@ -120,7 +142,7 @@
         <div class="mt-3 border-t border-white/10 pt-3">{{ $slot }}</div>
     @endif
 
-    @unless ($scheduled)
+    @unless ($hidden)
         <x-share-dialog :quote="$quote" :url="$quoteUrl" :text="$shareText" />
     @endunless
 

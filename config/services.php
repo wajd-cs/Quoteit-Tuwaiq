@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // free translation service for quotes (an email raises the daily limit)
+    'mymemory' => [
+        'email' => env('MYMEMORY_EMAIL'),
+    ],
+
 ];

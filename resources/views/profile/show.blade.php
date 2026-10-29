@@ -32,6 +32,7 @@
                         @endif
                         @auth
                             <x-follow-button :user="$user" />
+                            <x-message-button :user="$user" />
                         @else
                             <a href="{{ route('login') }}" class="btn-secondary px-4 py-2 text-sm"><x-icon name="user-plus" class="h-4 w-4" /> {{ __('Follow') }}</a>
                         @endauth
@@ -154,7 +155,7 @@
                         <div class="flex items-center gap-3 text-sm">
                             <span class="w-32 shrink-0 truncate">{{ $name }}</span>
                             <div class="h-2.5 flex-1 rounded-full bg-white/5">
-                                <div class="h-full rounded-full bg-gradient-to-r from-tuwaiq-purple-light to-tuwaiq-orange" style="width: {{ $count / $taste->max() * 100 }}%"></div>
+                                <div class="h-full rounded-full bg-gradient-to-l from-[#8b6cf0] to-[#f2a54a] rtl:bg-gradient-to-r" style="width: {{ $count / $taste->max() * 100 }}%"></div>
                             </div>
                             <span class="w-14 text-end text-tuwaiq-lilac tabular-nums">{{ round($count / $taste->sum() * 100) }}%</span>
                         </div>
@@ -164,12 +165,13 @@
         @endif
 
         {{-- Tabs --}}
-        <nav class="mt-8 flex w-fit rounded-2xl border border-white/10 bg-tuwaiq-ink/70 p-1" aria-label="{{ __('Profile sections') }}">
+        <nav class="no-scrollbar mt-8 flex w-fit max-w-full overflow-x-auto rounded-2xl border border-white/10 bg-tuwaiq-ink/70 p-1" aria-label="{{ __('Profile sections') }}">
             <a href="{{ route('users.show', $user) }}" class="tab {{ $tab === 'quotes' ? 'tab-active' : '' }}">{{ $isMe ? __('My quotes') : __('Quotes') }}</a>
             <a href="{{ route('users.show', [$user, 'tab' => 'liked']) }}" class="tab {{ $tab === 'liked' ? 'tab-active' : '' }}">{{ __('Liked') }}</a>
             @if ($isMe)
                 <a href="{{ route('users.show', [$user, 'tab' => 'saved']) }}" class="tab {{ $tab === 'saved' ? 'tab-active' : '' }}">{{ __('Favourites') }}</a>
                 <a href="{{ route('users.show', [$user, 'tab' => 'scheduled']) }}" class="tab {{ $tab === 'scheduled' ? 'tab-active' : '' }}">{{ __('Scheduled') }} @if ($scheduledCount)<span class="ms-1 rounded-full bg-tuwaiq-orange px-1.5 text-xs text-tuwaiq-night tabular-nums">{{ $scheduledCount }}</span>@endif</a>
+                <a href="{{ route('users.show', [$user, 'tab' => 'drafts']) }}" class="tab {{ $tab === 'drafts' ? 'tab-active' : '' }}">{{ __('Drafts') }} @if ($draftsCount)<span class="ms-1 rounded-full bg-tuwaiq-lilac px-1.5 text-xs text-tuwaiq-night tabular-nums">{{ $draftsCount }}</span>@endif</a>
             @endif
         </nav>
 
@@ -182,6 +184,7 @@
                         @case('saved') {{ __('Nothing saved yet. Press the bookmark on any quote to keep it here.') }} @break
                         @case('liked') {{ __('No liked quotes yet.') }} @break
                         @case('scheduled') {{ __('No scheduled quotes. When you share a quote, open “Publish later” to pick a day and time.') }} @break
+                        @case('drafts') {{ __('No drafts. When you write a quote, press “Save as draft” to finish it later.') }} @break
                         @default {{ $isMe ? __('You haven\'t shared a quote yet. Press + to share your first one!') : __('No quotes shared yet.') }}
                     @endswitch
                 </p>

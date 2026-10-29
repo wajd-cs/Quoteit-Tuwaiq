@@ -66,6 +66,16 @@
                 </div>
             </fieldset>
 
+            <fieldset id="notifications" class="scroll-mt-24">
+                <legend class="label">{{ __('Notifications') }}</legend>
+                <input type="hidden" name="notify_new_quotes" value="0">
+                <label class="toggle">
+                    <input type="checkbox" name="notify_new_quotes" value="1" @checked(old('notify_new_quotes', $user->notify_new_quotes))>
+                    <span class="text-sm text-white">{{ __('Tell me when someone I follow posts a new quote') }}</span>
+                </label>
+                <p class="hint">{{ __('Off by default. New messages always show in the bell.') }}</p>
+            </fieldset>
+
             <div class="flex gap-3">
                 <button type="submit" class="btn-primary flex-1">{{ __('Save profile') }}</button>
                 <a href="{{ route('users.show', $user) }}" class="btn-ghost">{{ __('Cancel') }}</a>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\QuoteStyle;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-#[Fillable(['content', 'author', 'category_id', 'published_at'])]
+#[Fillable(['content', 'author', 'category_id', 'published_at', 'is_draft', 'style'])]
 class Quote extends Model
 {
     use HasFactory;
@@ -21,25 +22,27 @@ class Quote extends Model
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime'];
+        return ['published_at' => 'datetime', 'is_draft' => 'boolean', 'style' => 'array'];
     }
 
     protected static function booted(): void
     {
-        // scheduled quotes stay hidden until their time comes
+        // scheduled quotes stay hidden until their time comes; drafts have no time at all
         static::addGlobalScope('published', fn (Builder $q) => $q->where('quotes.published_at', '<=', now()));
 
         static::creating(function (Quote $quote) {
-            $quote->published_at ??= now();
+            if (! $quote->is_draft) {
+                $quote->published_at ??= now();
+            }
         });
     }
 
-    /** Owners can open their scheduled quotes (edit, delete, publish now); everyone else gets 404. */
+    /** Owners can open their scheduled quotes and drafts (edit, delete, publish now); everyone else gets 404. */
     public function resolveRouteBinding($value, $field = null)
     {
         $quote = static::withoutGlobalScope('published')->where($field ?? $this->getRouteKeyName(), $value)->first();
 
-        if (! $quote || ($quote->isScheduled() && ! $quote->isOwnedBy())) {
+        if (! $quote || (($quote->isScheduled() || $quote->is_draft) && ! $quote->isOwnedBy())) {
             return null;
         }
 
@@ -48,7 +51,31 @@ class Quote extends Model
 
     public function isScheduled(): bool
     {
-        return $this->published_at !== null && $this->published_at->isFuture();
+        return ! $this->is_draft && $this->published_at !== null && $this->published_at->isFuture();
+    }
+
+    /** Not live yet: a draft or a scheduled quote. */
+    public function isHidden(): bool
+    {
+        return $this->is_draft || $this->isScheduled();
+    }
+
+    /** My drafts, newest first. */
+    public function scopeDraftsBy(Builder $query, User $user): Builder
+    {
+        return $query->withoutGlobalScope('published')
+            ->where('user_id', $user->id)
+            ->where('is_draft', true);
+    }
+
+    public function styleClasses(): string
+    {
+        return QuoteStyle::classes($this->style);
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(QuoteTranslation::class);
     }
 
     /** Only my quotes that are waiting for their time. */
@@ -56,6 +83,7 @@ class Quote extends Model
     {
         return $query->withoutGlobalScope('published')
             ->where('user_id', $user->id)
+            ->where('is_draft', false)
             ->where('quotes.published_at', '>', now());
     }
 

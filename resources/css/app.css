@@ -6,6 +6,25 @@
 @source '../js';
 
 @font-face {
+    font-family: 'Cairo';
+    src: url('/fonts/Cairo.ttf') format('truetype');
+    font-weight: 200 1000;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Alexandria';
+    src: url('/fonts/Alexandria.ttf') format('truetype');
+    font-weight: 100 900;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Rubik';
+    src: url('/fonts/Rubik.ttf') format('truetype');
+    font-weight: 300 900;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'Readex Pro';
     src: url('/fonts/ReadexPro.ttf') format('truetype');
     font-weight: 160 700;
@@ -122,11 +141,48 @@
         @apply bg-tuwaiq-teal/20 text-tuwaiq-teal;
     }
 
+    .style-chip {
+        @apply cursor-pointer rounded-full border border-white/15 px-3 py-1 text-sm text-tuwaiq-text transition hover:bg-white/5 has-checked:border-tuwaiq-teal has-checked:bg-tuwaiq-teal/15 has-checked:text-white has-focus-visible:ring-2 has-focus-visible:ring-tuwaiq-teal;
+    }
+    .count-badge {
+        @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ef4565] px-1 text-[11px] leading-none font-bold text-[#fff];
+    }
+    .count-badge[hidden] {
+        display: none;
+    }
+    .bottom-nav {
+        @apply fixed inset-x-0 bottom-0 z-50 flex h-[68px] items-center justify-around border-t border-white/10 bg-tuwaiq-ink/95 px-1 pb-1.5 backdrop-blur-md;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+    }
+    .bottom-tab {
+        @apply flex w-16 flex-col items-center gap-0.5 text-[11px] text-tuwaiq-lilac transition active:scale-95 focus:outline-none focus-visible:text-white;
+    }
+    .bottom-tab.is-on {
+        @apply font-bold text-tuwaiq-teal;
+    }
+    .bottom-plus {
+        @apply -mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-tuwaiq-orange text-tuwaiq-night shadow-xl shadow-black/40 transition active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-orange/40;
+    }
     .search-link {
         @apply inline-flex h-10 w-10 items-center justify-center rounded-full border border-tuwaiq-teal/50 text-tuwaiq-teal transition hover:bg-tuwaiq-teal/15 active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-teal/40;
     }
     .search-link.is-active {
         @apply bg-tuwaiq-teal text-tuwaiq-night;
+    }
+    .bubble {
+        @apply max-w-[80%] rounded-3xl rounded-es-md bg-white/10 px-4 py-2.5 text-sm leading-relaxed text-white;
+    }
+    .bubble-mine {
+        @apply ms-auto rounded-es-3xl rounded-ee-md bg-tuwaiq-purple text-[#fff];
+    }
+    .bubble-time {
+        @apply mt-0.5 block text-[10px] opacity-70;
+    }
+    .share-app {
+        @apply flex flex-col items-center gap-1.5 rounded-2xl p-1 text-center text-xs text-tuwaiq-text transition hover:bg-white/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-tuwaiq-teal;
+    }
+    .share-tile {
+        @apply flex h-14 w-14 items-center justify-center rounded-2xl shadow-md shadow-black/20;
     }
     .speed-chip {
         @apply min-w-0 flex-1 rounded-full border border-white/15 px-1 py-1 text-sm sm:flex-none sm:min-w-14 sm:px-3 font-semibold text-tuwaiq-text tabular-nums transition hover:bg-white/10 active:scale-95;
@@ -405,68 +461,303 @@ html[data-speaking='1'] .fab {
 .quote-of-day {
     background-image: linear-gradient(to bottom right, rgb(67 42 128 / 0.8), rgb(26 15 48 / 0.9));
 }
-html[data-theme='light'] .quote-of-day {
-    background-image: linear-gradient(to bottom right, #e3d8fb, #ffffff);
-    border-color: #d8ccf6;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* phones and tablets: room for the bottom bar */
+@media (max-width: 1023px) {
+    body {
+        padding-bottom: 72px;
+    }
+    .fab {
+        display: none !important;
+    }
+    #speech-bar {
+        bottom: 84px;
+    }
 }
 
-/* ---------- light mode ---------- */
-/* the same Tuwaiq colours on a light background; dark stays the default */
-html[data-theme='light'] {
-    color-scheme: light;
-    --color-tuwaiq-night: #f6f3fc;
-    --color-tuwaiq-ink: #ffffff;
-    --color-tuwaiq-text: #2a2140;
-    --color-white: #1d1530;
-    --color-tuwaiq-lilac: #6b6385;
-    --color-tuwaiq-teal: #11806b;
-    --color-tuwaiq-purple-light: #5b3fa0;
-}
-html[data-theme='light'] body {
-    background-image: linear-gradient(to bottom, #f6f3fc, #efe9fb) !important;
-}
-html[data-theme='light'] nav[aria-label] {
-    background-color: rgb(255 255 255 / 0.9);
-}
-html[data-theme='light'] .panel {
-    box-shadow: 0 6px 24px rgb(67 42 128 / 0.08);
-    backdrop-filter: none;
-}
-html[data-theme='light'] .btn-primary,
-html[data-theme='light'] .btn-primary * {
-    color: #ffffff;
-}
-html[data-theme='light'] .btn-secondary,
-html[data-theme='light'] .fab {
-    color: #1d1530;
-}
-html[data-theme='light'] .text-tuwaiq-orange {
-    color: #b4610a;
-}
-html[data-theme='light'] .input,
-html[data-theme='light'] select {
-    background-color: #ffffff;
-    border-color: #ddd6f3;
-    color: #1d1530;
-}
-html[data-theme='light'] [class*='from-tuwaiq-purple'] {
-    background-image: linear-gradient(135deg, #e6dcfb, #ffffff) !important;
-}
-html[data-theme='light'] #toast {
-    background-color: #1d1530;
-    color: #ffffff;
+
+/* ---------- quote look chosen when writing (fixed presets) ---------- */
+:root {
+    --qc-teal: #4fc9b0;
+    --qc-orange: #f2a54a;
+    --qc-rose: #f58bb4;
+    --qc-lilac: #b9a8ff;
+    --qc-sky: #6cc4ff;
+    --qc-gold: #f5d36b;
+    --qc-mint: #8be0a4;
 }
 
-/* the right logo for each mode; the button shows the mode you can switch to */
-.logo-light,
-.theme-icon-moon {
+.quote-text { --qs-base: 1.3rem; }
+.quote-text-lg { --qs-base: 1.8rem; }
+.qs-size-s { font-size: calc(var(--qs-base, 1.3rem) * 0.85 * var(--qscale)) !important; }
+.qs-size-l { font-size: calc(var(--qs-base, 1.3rem) * 1.25 * var(--qscale)) !important; }
+.qs-font-cairo { font-family: 'Cairo', var(--font-quote) !important; }
+.qs-font-alexandria { font-family: 'Alexandria', var(--font-quote) !important; }
+.qs-font-rubik { font-family: 'Rubik', var(--font-quote) !important; }
+.qs-font-readex { font-family: 'Readex Pro', var(--font-quote) !important; }
+.qs-align-center { text-align: center; }
+.qs-color-teal { color: var(--qc-teal) !important; }
+.qs-color-orange { color: var(--qc-orange) !important; }
+.qs-color-rose { color: var(--qc-rose) !important; }
+.qs-color-lilac { color: var(--qc-lilac) !important; }
+.qs-color-sky { color: var(--qc-sky) !important; }
+.qs-color-gold { color: var(--qc-gold) !important; }
+.qs-color-mint { color: var(--qc-mint) !important; }
+.qs-dot-default { --dot: var(--color-white); }
+.qs-dot-teal { --dot: var(--qc-teal); }
+.qs-dot-orange { --dot: var(--qc-orange); }
+.qs-dot-rose { --dot: var(--qc-rose); }
+.qs-dot-lilac { --dot: var(--qc-lilac); }
+.qs-dot-sky { --dot: var(--qc-sky); }
+.qs-dot-gold { --dot: var(--qc-gold); }
+.qs-dot-mint { --dot: var(--qc-mint); }
+.color-dot {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: var(--dot);
+    cursor: pointer;
+    box-shadow: 0 0 0 2px var(--color-tuwaiq-ink), 0 0 0 3px color-mix(in srgb, var(--color-white) 20%, transparent);
+    transition: transform 0.15s;
+}
+.color-dot:has(:checked) {
+    box-shadow: 0 0 0 2px var(--color-tuwaiq-ink), 0 0 0 4px var(--color-tuwaiq-teal);
+    transform: scale(1.1);
+}
+.color-dot:has(:focus-visible) {
+    outline: 2px solid var(--color-tuwaiq-teal);
+    outline-offset: 4px;
+}
+
+/* ---------- stories ---------- */
+.story-ring-wrap {
+    display: flex;
+    flex: none;
+    width: 68px;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.story-ring {
+    display: flex;
+    width: 64px;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 3px;
+    background: conic-gradient(#f2a54a, #c2417a, #53398f, #4fc9b0, #f2a54a);
+    transition: transform 0.15s;
+}
+.story-ring > * {
+    width: 100% !important;
+    height: 100% !important;
+    border: 3px solid var(--color-tuwaiq-night);
+    border-radius: 9999px;
+}
+.story-ring.is-new {
+    background: none;
+    border: 2px dashed color-mix(in srgb, var(--color-white) 35%, transparent);
+    color: var(--color-tuwaiq-teal);
+}
+.story-ring-wrap:hover .story-ring,
+.story-ring-wrap:focus-visible .story-ring {
+    transform: scale(1.06);
+}
+.story-name {
+    max-width: 68px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--color-tuwaiq-text);
+}
+.story-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(5 2 12 / 0.92);
+}
+.story-viewer[hidden] {
     display: none;
 }
-html[data-theme='light'] .logo-dark,
-html[data-theme='light'] .theme-icon-sun {
-    display: none;
+.story-card,
+.story-preview {
+    background: radial-gradient(circle at 25% 15%, #6d4fc2 0%, #2b1659 45%, #10081f 100%);
 }
-html[data-theme='light'] .logo-light,
-html[data-theme='light'] .theme-icon-moon {
-    display: block;
+.story-card {
+    display: flex;
+    width: min(420px, 100vw);
+    height: min(760px, 100dvh);
+    flex-direction: column;
+    padding: 14px 16px 16px;
+    border-radius: 24px;
+    color: #fff;
+    user-select: none;
+}
+@media (max-width: 640px) {
+    .story-card {
+        border-radius: 0;
+    }
+}
+.story-preview {
+    display: flex;
+    min-height: 150px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    padding: 18px;
+}
+.story-bar-track {
+    height: 3px;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgb(255 255 255 / 0.3);
+}
+.story-bar-fill {
+    height: 100%;
+    width: 0;
+    background: #fff;
+}
+.story-tap {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 35%;
+    z-index: 1;
+}
+.story-btn {
+    display: inline-flex;
+    height: 38px;
+    width: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: #fff;
+}
+.story-btn:hover {
+    background: rgb(255 255 255 / 0.12);
+}
+.story-avatar > * {
+    width: 36px !important;
+    height: 36px !important;
+}
+.story-like {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.12);
+    padding: 8px 14px;
+    color: #fff;
+    font-weight: 700;
+}
+.story-like[aria-pressed='true'] svg {
+    fill: #ef4565;
+    stroke: #ef4565;
+}
+
+/* colour buttons in the design studio: a clean round swatch in both modes */
+input[type='color'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    border-radius: 9999px !important;
+    border: 2px solid color-mix(in srgb, var(--color-white) 25%, transparent) !important;
+    background: transparent !important;
+    cursor: pointer;
+    box-shadow: 0 0 0 3px var(--color-tuwaiq-ink);
+}
+input[type='color']::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type='color']::-webkit-color-swatch {
+    border: none;
+    border-radius: 9999px;
+}
+input[type='color']::-moz-color-swatch {
+    border: none;
+    border-radius: 9999px;
+}
+
+
+/* ---------- first-visit tour ---------- */
+.tour-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+}
+.tour-spot {
+    position: fixed;
+    border-radius: 18px;
+    box-shadow: 0 0 0 9999px rgb(5 2 12 / 0.7);
+    outline: 2px solid var(--color-tuwaiq-teal);
+    transition: all 0.25s ease;
+    pointer-events: none;
+}
+.tour-card {
+    position: fixed;
+    width: min(320px, calc(100vw - 24px));
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, var(--color-white) 15%, transparent);
+    background: var(--color-tuwaiq-ink);
+    padding: 16px;
+    box-shadow: 0 20px 50px rgb(0 0 0 / 0.45);
+    transition: top 0.25s ease, left 0.25s ease;
+}
+.tour-count {
+    font-size: 11px;
+    color: var(--color-tuwaiq-teal);
+    font-weight: 700;
+}
+.tour-title {
+    margin-top: 2px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-white);
+}
+.tour-text {
+    margin-top: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-tuwaiq-text);
+}
+.tour-actions {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.tour-skip {
+    font-size: 13px;
+    color: var(--color-tuwaiq-lilac);
+}
+html[data-motion='reduce'] .tour-spot,
+html[data-motion='reduce'] .tour-card {
+    transition: none;
 }

@@ -10,7 +10,9 @@
         )));
     @endphp
 
-    <div class="mx-auto max-w-6xl px-4 pt-8">
+    <div class="mx-auto max-w-6xl px-4 pt-6">
+
+        <x-story-bar :groups="$storyGroups" />
 
         {{-- Hero + quote of the day --}}
         @if ($showHero)

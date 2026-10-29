@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['quote_id', 'user_id', 'channel'])]
 class QuoteShare extends Model
 {
-    public const CHANNELS = ['copy', 'link', 'x', 'whatsapp', 'telegram', 'linkedin', 'facebook', 'native', 'image'];
+    public const CHANNELS = ['copy', 'link', 'x', 'whatsapp', 'telegram', 'linkedin', 'facebook', 'instagram', 'snapchat', 'email', 'native', 'image'];
 
     public function quote(): BelongsTo
     {

@@ -15,6 +15,8 @@ class ShareController extends Controller
      */
     public function store(Request $request, Quote $quote)
     {
+        abort_if($quote->isHidden(), 404);
+
         $validated = $request->validate(['channel' => ['required', Rule::in(QuoteShare::CHANNELS)]]);
 
         $quote->shares()->create([

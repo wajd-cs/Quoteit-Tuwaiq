@@ -8,7 +8,7 @@
     data-contrast="{{ $prefs['contrast'] }}" data-colors="{{ $prefs['colors'] }}"
     data-motion="{{ $prefs['reduce_motion'] ? 'reduce' : 'full' }}" data-links="{{ $prefs['underline_links'] ? 'underline' : 'plain' }}"
     data-spacing="{{ $prefs['readable_spacing'] ? 'wide' : 'normal' }}" data-speech-rate="{{ $prefs['speech_rate'] }}"
-    data-signed-in="{{ auth()->check() ? '1' : '0' }}" data-theme="{{ $prefs['theme'] }}"
+    data-signed-in="{{ auth()->check() ? '1' : '0' }}"
     style="--qscale: {{ $prefs['text_scale'] }}">
 
 <head>
@@ -36,7 +36,6 @@
                 if ('underline_links' in p) d.dataset.links = p.underline_links ? 'underline' : 'plain';
                 if ('readable_spacing' in p) d.dataset.spacing = p.readable_spacing ? 'wide' : 'normal';
                 if (p.speech_rate) d.dataset.speechRate = p.speech_rate;
-                if (p.theme) d.dataset.theme = p.theme;
                 if (p.text_scale || s) d.style.setProperty('--qscale', p.text_scale || s);
             } catch (e) {}
         </script>
@@ -46,6 +45,31 @@
         $qiConfig = [
             'locale' => $locale,
             'savePrefsUrl' => route('accessibility.update'),
+            'liveUrl' => auth()->check() ? route('live') : null,
+            // first-visit tour: shown once on the home page
+            'tour' => [
+                'done' => (bool) $prefs['tour_done'],
+                'onHome' => request()->routeIs('home'),
+                'homeUrl' => route('home', ['tour' => 1]),
+                'steps' => collect([
+            ['intro', __('Welcome to QuoteIt'), __('A quick tour of the main places. It takes 30 seconds.')],
+            ['stories', __('Stories'), __('Short quotes that disappear after 12 or 24 hours. Tap a circle to watch, or “+” to add yours.')],
+            ['share', __('Share a quote'), __('Write a quote, choose its font and colour, publish it now, later, or keep it as a draft.')],
+            ['home', __('Home'), __('Everything people share. Like, save, listen, translate and share any quote from its card.')],
+            ['gets-me', __('Quote That Gets Me'), __('Tell us how you feel and what you need, and get quotes that fit.')],
+            ['search', __('Smart search'), __('Write what you need in your own words, in Arabic or English.')],
+            ['messages', __('Messages'), __('Private chats with other people. Only the two of you can read them.')],
+            ['bell', __('Notifications'), __('New messages, and new quotes from people you follow if you turn it on.')],
+            ['language', __('العربية / English'), __('Use QuoteIt in Arabic or English.')],
+            ['account', __('Your account'), __('Your profile, drafts, favourites, achievements and settings. You can replay this tour from here.')],
+            ['signup', __('Join QuoteIt'), __('Create a free account to share quotes, chat and get recommendations.')],
+        ])->map(fn ($s) => ['target' => $s[0], 'title' => $s[1], 'text' => $s[2]]),
+                'next' => __('Next'),
+                'back' => __('Back'),
+                'skip' => __('Skip'),
+                'done_label' => __('Done'),
+                'count' => __(':step of :total'),
+            ],
             't' => [
                 'saved_fav' => __('Saved to favourites'),
                 'removed_fav' => __('Removed from favourites'),
@@ -63,8 +87,11 @@
                 'new_badge' => __('New badge'),
                 'image_saved' => __('Image saved'),
                 'stop' => __('Stop'),
-                'to_light' => __('Switch to light mode'),
-                'to_dark' => __('Switch to dark mode'),
+                'pause' => __('Pause'),
+                'play' => __('Play'),
+                'translating' => __('Translating…'),
+                'translate_failed' => __('Translation is not available right now. Please try again later.'),
+                'message_failed' => __('The message was not sent. Check your connection and try again.'),
             ],
         ];
     @endphp
@@ -90,8 +117,11 @@
     <footer class="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-tuwaiq-lilac/80">
         {{ __('QuoteIt · Built in the Tuwaiq Club bootcamp · Umm Al-Qura University') }}
         · <a href="{{ route('accessibility') }}" class="underline-offset-2 hover:underline">{{ __('Accessibility') }}</a>
+        · <button type="button" class="underline-offset-2 hover:underline" data-tour-start>{{ __('Show the tour again') }}</button>
         <p class="mt-2" dir="ltr">&copy; {{ now()->year }} Wajd Alluhaibi. All rights reserved.</p>
     </footer>
+
+    <x-bottom-nav :page="$page ?? ''" />
 
     {{-- shows while a quote is being read aloud: change the speed or stop right here --}}
     <div id="speech-bar" hidden role="region" aria-label="{{ __('Reading aloud') }}"

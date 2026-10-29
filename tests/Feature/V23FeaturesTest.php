@@ -290,21 +290,45 @@ test('the reading bar offers every speed and saving a speed from it is kept on t
     $this->actingAs($user)->get('/')->assertSee('data-speech-rate="1.5"', false);
 });
 
-test('a user can switch to light mode and it stays on their account', function () {
+test('the site has one dark look and no light mode switch', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get('/')
-        ->assertSee('data-theme="dark"', false)
-        ->assertSee('data-theme-toggle', false)
-        ->assertSee('images/logo-light.png', false);
+        ->assertDontSee('data-theme-toggle', false)
+        ->assertDontSee('images/logo-light.png', false)
+        ->assertSee('images/logo.png', false);
 
     $this->actingAs($user)->putJson(route('accessibility.update'), ['theme' => 'light'])->assertOk();
-    $this->actingAs($user)->get('/')->assertSee('data-theme="light"', false);
-
-    $this->actingAs($user)->putJson(route('accessibility.update'), ['theme' => 'purple'])->assertOk();
-    expect($user->fresh()->preferences['theme'])->toBe('light');
+    expect($user->fresh()->preferences)->not->toHaveKey('theme');
 });
 
 test('the top bar has a link back to the home page', function () {
     $this->get(route('search'))->assertSee('href="'.route('home').'"', false)->assertSee('Home');
+});
+
+// ---------- v2.4: submission rules and safety ----------
+
+test('a quote can have at most 155 characters', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post(route('quotes.store'), ['content' => str_repeat('a', 156)])->assertSessionHasErrors('content');
+    $this->actingAs($user)->post(route('quotes.store'), ['content' => str_repeat('a', 155)])->assertSessionDoesntHaveErrors();
+    $this->actingAs($user)->get('/')->assertSee('maxlength="155"', false);
+});
+
+test('login stops after 5 wrong passwords in a minute', function () {
+    $user = User::factory()->create(['email' => 'sara@example.com']);
+
+    foreach (range(1, 5) as $try) {
+        $this->post('/login', ['email' => 'sara@example.com', 'password' => 'wrong-password'])->assertSessionHasErrors('email');
+    }
+
+    $this->post('/login', ['email' => 'sara@example.com', 'password' => 'password'])->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toStartWith('Too many tries.');
+    $this->assertGuest();
+});
+
+test('the insights report is built on a layout like every other page', function () {
+    $this->get(route('insights.report'))->assertOk()->assertSee('class="sheet"', false)->assertSee('Download PDF');
+    expect(file_get_contents(resource_path('views/insights/report.blade.php')))->toContain("@extends('Layout.print')");
 });

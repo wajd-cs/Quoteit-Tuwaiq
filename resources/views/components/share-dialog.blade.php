@@ -4,12 +4,17 @@
     $message = $text . "\n\n" . __('Shared from QuoteIt');
     $enc = rawurlencode($message);
     $encUrl = rawurlencode($url);
-    $links = [
-        ['X (Twitter)', 'x', "https://twitter.com/intent/tweet?text={$enc}&url={$encUrl}"],
-        ['WhatsApp', 'whatsapp', 'https://wa.me/?text=' . rawurlencode($message . "\n" . $url)],
-        ['Telegram', 'telegram', "https://t.me/share/url?url={$encUrl}&text={$enc}"],
-        ['LinkedIn', 'linkedin', "https://www.linkedin.com/sharing/share-offsite/?url={$encUrl}"],
-        ['Facebook', 'facebook', "https://www.facebook.com/sharer/sharer.php?u={$encUrl}"],
+    $studio = route('studio', $quote);
+    // Instagram and Snapchat do not accept text from websites, so the quote goes as an image from the studio
+    $apps = [
+        [__('WhatsApp'), 'whatsapp', 'https://wa.me/?text=' . rawurlencode($message . "\n" . $url), true],
+        ['X', 'x', "https://twitter.com/intent/tweet?text={$enc}&url={$encUrl}", true],
+        [__('Instagram'), 'instagram', $studio . '?for=instagram', false],
+        [__('Snapchat'), 'snapchat', $studio . '?for=snapchat', false],
+        [__('Telegram'), 'telegram', "https://t.me/share/url?url={$encUrl}&text={$enc}", true],
+        [__('LinkedIn'), 'linkedin', "https://www.linkedin.com/sharing/share-offsite/?url={$encUrl}", true],
+        [__('Facebook'), 'facebook', "https://www.facebook.com/sharer/sharer.php?u={$encUrl}", true],
+        [__('Email'), 'email', 'mailto:?subject=' . rawurlencode(__('A quote for you')) . '&body=' . rawurlencode($message . "\n" . $url), false],
     ];
     $sharedUrl = route('quotes.shared', $quote);
     // links made on a local machine only work on that machine
@@ -32,16 +37,19 @@
             </p>
         @endif
 
-        <div class="grid grid-cols-2 gap-2">
-            @foreach ($links as [$label, $channel, $href])
-                <a href="{{ $href }}" target="_blank" rel="noopener" class="btn-ghost justify-start px-4 py-2 text-sm" data-share-channel="{{ $channel }}" data-share-url="{{ $sharedUrl }}">{{ $label }}</a>
+        <div class="grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5">
+            @foreach ($apps as [$label, $channel, $href, $newTab])
+                <a href="{{ $href }}" @if ($newTab) target="_blank" rel="noopener" @endif class="share-app" data-share-channel="{{ $channel }}" data-share-url="{{ $sharedUrl }}">
+                    <x-brand-tile :name="$channel" />
+                    <span>{{ $label }}</span>
+                </a>
             @endforeach
-            <button type="button" class="btn-ghost justify-start px-4 py-2 text-sm" data-copy="{{ $url }}" data-share-channel="link" data-share-url="{{ $sharedUrl }}">
-                <x-icon name="link" class="h-4 w-4" /> {{ __('Copy link') }}
+            <button type="button" class="share-app" data-copy="{{ $url }}" data-share-channel="link" data-share-url="{{ $sharedUrl }}">
+                <x-brand-tile name="link" />
+                <span>{{ __('Copy link') }}</span>
             </button>
         </div>
-
-        <a href="{{ route('studio', $quote) }}" class="btn-secondary mt-3 w-full">{{ __('Design it as an image') }}</a>
+        <p class="hint mt-4">{{ __('Instagram and Snapchat: the quote is designed as an image, then shared from your phone.') }}</p>
 
         <button type="button" class="btn-primary mt-3 hidden w-full" data-native-share data-title="QuoteIt" data-text="{{ $message }}" data-url="{{ $url }}" data-share-channel="native" data-share-url="{{ $sharedUrl }}">
             {{ __('More options…') }}

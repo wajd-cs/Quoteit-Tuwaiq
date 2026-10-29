@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\QuoteStyle;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
@@ -12,6 +13,18 @@ class QuoteRequest extends FormRequest
     public function authorize(): bool
     {
         return Auth::check();
+    }
+
+    /** "Save as draft" was pressed. */
+    public function wantsDraft(): bool
+    {
+        return $this->boolean('draft');
+    }
+
+    /** Font, size, colour and alignment (only known presets). */
+    public function style(): ?array
+    {
+        return QuoteStyle::clean($this->input('style'));
     }
 
     /** The chosen publish time, or null to publish now. */
@@ -34,7 +47,7 @@ class QuoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => ['required', 'string', 'min:3', 'max:255'],
+            'content' => ['required', 'string', 'min:3', 'max:155'],
             'author' => ['nullable', 'string', 'max:80'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'moods' => ['nullable', 'array'],
@@ -43,6 +56,9 @@ class QuoteRequest extends FormRequest
             'goals.*' => ['integer', 'exists:goals,id'],
             // optional: publish later (Riyadh time), at least a minute from now and within a year
             'publish_at' => ['nullable', 'date', 'after:now', 'before:'.now()->addYear()->toDateTimeString()],
+            'draft' => ['nullable', 'boolean'],
+            'style' => ['nullable', 'array'],
+            'style.*' => ['nullable', 'string', 'max:20'],
         ];
     }
 }

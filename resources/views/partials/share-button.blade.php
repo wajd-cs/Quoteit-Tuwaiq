@@ -1,6 +1,6 @@
 @auth
     {{-- + button --}}
-    <button type="button" popovertarget="quote-popup" aria-label="{{ __('Share a quote') }}" title="{{ __('Share a quote') }}"
+    <button type="button" popovertarget="quote-popup" data-tour="share" aria-label="{{ __('Share a quote') }}" title="{{ __('Share a quote') }}"
         class="fab fixed end-6 bottom-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-tuwaiq-orange text-tuwaiq-night shadow-xl shadow-black/40 transition hover:scale-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-orange/40">
         <x-icon name="plus" class="h-8 w-8" />
     </button>

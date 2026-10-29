@@ -12,7 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'bio', 'contact_link', 'locale', 'avatar_path', 'preferences'])]
+#[Fillable(['name', 'email', 'password', 'bio', 'contact_link', 'locale', 'avatar_path', 'preferences', 'notify_new_quotes', 'notifications_seen_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,12 +29,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'preferences' => 'array',
+            'notify_new_quotes' => 'boolean',
+            'notifications_seen_at' => 'datetime',
         ];
     }
 
     public function quotes(): HasMany
     {
         return $this->hasMany(Quote::class);
+    }
+
+    public function stories(): HasMany
+    {
+        return $this->hasMany(Story::class);
     }
 
     public function comments(): HasMany

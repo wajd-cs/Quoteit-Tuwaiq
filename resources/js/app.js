@@ -48,7 +48,7 @@ document.addEventListener('submit', async (event) => {
     const kind = form.dataset.toggle;
     if (!kind) {
         // normal forms: show they are working and stop double clicks
-        if (!form.matches('[data-gets-me], [data-pick], [data-prefs-form], [data-studio-form]') && form.method.toLowerCase() === 'post') {
+        if (!form.matches('[data-gets-me], [data-pick], [data-prefs-form], [data-studio-form], [data-chat-form]') && form.method.toLowerCase() === 'post') {
             const submitter = event.submitter || form.querySelector('[type=submit]');
             if (submitter) {
                 setTimeout(() => {
@@ -62,17 +62,32 @@ document.addEventListener('submit', async (event) => {
 
     event.preventDefault();
     const button = form.querySelector('button');
-    button.disabled = true;
+    // same quote can show twice (quote of the day), so update every copy
+    const buttons = [...document.querySelectorAll(`form[data-toggle="${kind}"][action="${form.action}"] button`)];
+    const wasOn = button.getAttribute('aria-pressed') === 'true';
 
-    // answer the click straight away, the server confirms after
-    if (kind === 'like') {
-        const willLike = button.getAttribute('aria-pressed') !== 'true';
-        if (willLike && !reduceMotion()) {
-            button.classList.remove('heart-pop');
-            void button.offsetWidth;
-            button.classList.add('heart-pop');
-        }
+    const paint = (on, count) => buttons.forEach((btn) => {
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        const counter = btn.querySelector('[data-count]');
+        if (counter && count !== undefined) counter.textContent = count;
+        const label = btn.querySelector('[data-label]');
+        if (label) label.textContent = on ? btn.dataset.on : btn.dataset.off;
+    });
+
+    // change it straight away; the server only confirms
+    const counter = button.querySelector('[data-count]');
+    const before = counter ? parseInt(counter.textContent, 10) || 0 : undefined;
+    paint(!wasOn, before === undefined ? undefined : Math.max(0, before + (wasOn ? -1 : 1)));
+    if (kind === 'like' && !wasOn && !reduceMotion()) {
+        button.classList.remove('heart-pop');
+        void button.offsetWidth;
+        button.classList.add('heart-pop');
     }
+    if (kind === 'bookmark') toast(!wasOn ? t('saved_fav', 'Saved to favourites') : t('removed_fav', 'Removed from favourites'));
+
+    // quick double taps: only the last answer counts
+    const run = (Number(form.dataset.run) || 0) + 1;
+    form.dataset.run = run;
 
     try {
         const response = await fetch(form.action, {
@@ -82,26 +97,18 @@ document.addEventListener('submit', async (event) => {
         });
         if (!response.ok) throw new Error(response.status);
         const data = await response.json();
+        if (Number(form.dataset.run) !== run) return;
 
-        // same quote can show twice (quote of the day)
-        document.querySelectorAll(`form[data-toggle="${kind}"][action="${form.action}"] button`).forEach((btn) => {
-            btn.setAttribute('aria-pressed', data.active ? 'true' : 'false');
-            const count = btn.querySelector('[data-count]');
-            if (count && data.count !== undefined) count.textContent = data.count;
-            const label = btn.querySelector('[data-label]');
-            if (label) label.textContent = data.active ? btn.dataset.on : btn.dataset.off;
-        });
-
-        if (kind === 'bookmark') toast(data.active ? t('saved_fav', 'Saved to favourites') : t('removed_fav', 'Removed from favourites'));
+        paint(data.active, data.count);
         if (kind === 'follow') {
             const followers = document.querySelector('[data-followers-count]');
             if (followers && data.count !== undefined) followers.textContent = data.count;
         }
         showBadges(data.badges);
     } catch (error) {
-        form.submit();
-    } finally {
-        button.disabled = false;
+        if (Number(form.dataset.run) !== run) return;
+        paint(wasOn, before);
+        toast(t('save_failed', 'Could not save. Please try again.'));
     }
 });
 
@@ -116,6 +123,42 @@ document.addEventListener('click', async (event) => {
         toast(t('copy_failed', 'Could not copy'));
     }
 });
+
+// pick the most natural voice the device has for this language (no setting needed).
+// Neural voices (Edge "Online (Natural)", Apple "Premium", Google) sound close to a real person;
+// the old desktop voices sound robotic, so they are only used when nothing else exists.
+const HUMAN_VOICES = /natural|neural|premium|enhanced|siri|hamed|zariyah|shakir|aria|jenny|guy|ava|andrew|emma|brian|samantha|daniel|majed|tarik|laila/;
+const ROBOTIC_VOICES = /compact|espeak|naayf|hoda|david|zira|mark|hazel|george/;
+
+function bestVoice(lang) {
+    const base = lang.slice(0, 2).toLowerCase();
+    const score = (voice) => {
+        const name = voice.name.toLowerCase();
+        let points = 0;
+        if (HUMAN_VOICES.test(name)) points += 8;
+        if (/online/.test(name)) points += 4;
+        if (/google/.test(name)) points += 3;
+        if (voice.lang.toLowerCase() === lang.toLowerCase()) points += 2; // same country (ar-SA, en-US)
+        if (!voice.localService) points += 1;
+        if (ROBOTIC_VOICES.test(name)) points -= 6;
+        return points;
+    };
+    return window.speechSynthesis.getVoices()
+        .filter((v) => v.lang.toLowerCase().startsWith(base))
+        .sort((a, b) => score(b) - score(a))[0];
+}
+
+// clean the text so it is read like a person would say it
+function speakableText(text, lang) {
+    const pause = lang.startsWith('ar') ? '، ' : ', ';
+    return text
+        .replace(/[«»“”"]/g, '')
+        .replace(/\s+[—–-]\s+|[—–]/g, pause)
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+// some browsers load their voices a moment after the page
+window.speechSynthesis?.addEventListener?.('voiceschanged', () => {});
 
 // read aloud (for people with low vision)
 // the speed is saved like the other accessibility settings and can be changed from the bar while listening
@@ -144,14 +187,29 @@ function speak(button) {
     stopSpeaking();
     const run = speechRun;
 
-    const utterance = new SpeechSynthesisUtterance(button.dataset.speak);
-    utterance.lang = button.dataset.lang || 'en-US';
-    utterance.rate = parseFloat(root.dataset.speechRate) || 1;
-    const voice = window.speechSynthesis.getVoices().find((v) => v.lang.startsWith(utterance.lang.slice(0, 2)));
-    if (voice) utterance.voice = voice;
-    utterance.onend = utterance.onerror = () => {
+    const lang = button.dataset.lang || 'en-US';
+    const voice = bestVoice(lang);
+    // the quote first, then who said it after a short natural pause
+    const parts = [button.dataset.speak, button.dataset.speakAuthor].filter(Boolean).map((part) => speakableText(part, lang));
+    const utterances = parts.map((part) => {
+        const utterance = new SpeechSynthesisUtterance(part);
+        utterance.lang = lang;
+        // old robotic voices sound rushed; slow them a little
+        const calm = voice && HUMAN_VOICES.test(voice.name.toLowerCase()) ? 1 : 0.92;
+        utterance.rate = (parseFloat(root.dataset.speechRate) || 1) * calm;
+        utterance.pitch = 1;
+        if (voice) utterance.voice = voice;
+        return utterance;
+    });
+    const last = utterances[utterances.length - 1];
+    last.onend = () => {
         if (run === speechRun) stopSpeaking();
     };
+    utterances.forEach((utterance) => {
+        utterance.onerror = (event) => {
+            if (run === speechRun && event.error !== 'interrupted') stopSpeaking();
+        };
+    });
 
     speakingButton = button;
     button.classList.add('is-speaking');
@@ -162,7 +220,13 @@ function speak(button) {
         root.dataset.speaking = '1';
         markRate();
     }
-    window.speechSynthesis.speak(utterance);
+    utterances.forEach((utterance, index) => {
+        if (index === 0) {
+            window.speechSynthesis.speak(utterance);
+        } else {
+            utterances[index - 1].onend = () => run === speechRun && setTimeout(() => run === speechRun && window.speechSynthesis.speak(utterance), 350);
+        }
+    });
 }
 
 document.addEventListener('click', (event) => {
@@ -219,7 +283,6 @@ function applyPrefs(prefs) {
     if ('underline_links' in prefs) root.dataset.links = prefs.underline_links ? 'underline' : 'plain';
     if ('readable_spacing' in prefs) root.dataset.spacing = prefs.readable_spacing ? 'wide' : 'normal';
     if (prefs.speech_rate) root.dataset.speechRate = prefs.speech_rate;
-    if (prefs.theme) root.dataset.theme = prefs.theme;
     if (prefs.text_scale) root.style.setProperty('--qscale', prefs.text_scale);
 }
 
@@ -694,17 +757,411 @@ if (studio) {
     draw();
 }
 
-// light / dark mode (saved with the other display settings)
-document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
-    if (root.dataset.theme === 'light') {
-        button.setAttribute('aria-label', t('to_dark', 'Switch to dark mode'));
-        button.title = t('to_dark', 'Switch to dark mode');
-    }
-    button.addEventListener('click', () => {
-        const theme = root.dataset.theme === 'light' ? 'dark' : 'light';
-        savePrefs({ theme });
-        const label = theme === 'light' ? t('to_dark', 'Switch to dark mode') : t('to_light', 'Switch to light mode');
-        button.setAttribute('aria-label', label);
-        button.title = label;
+// ---------- bell, live numbers and chat ----------
+function setBadge(name, value) {
+    document.querySelectorAll(`[data-live="${name}"]`).forEach((badge) => {
+        badge.textContent = value;
+        badge.hidden = !value;
     });
+}
+
+// opening the bell marks the new quotes as seen
+const bellMenu = document.getElementById('bell-menu');
+bellMenu?.addEventListener('toggle', (event) => {
+    if (event.newState !== 'open') return;
+    fetch(bellMenu.dataset.seenUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' }, keepalive: true }).catch(() => {});
+    setBadge('notifications', 0);
 });
+
+// numbers on the bell and Messages stay fresh without reloading
+if (QI.liveUrl) {
+    const refreshLive = async () => {
+        if (document.hidden) return;
+        try {
+            const response = await fetch(QI.liveUrl, { headers: { Accept: 'application/json' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (!bellMenu?.matches(':popover-open')) setBadge('notifications', data.notifications);
+            if (!document.querySelector('[data-chat]')) setBadge('messages', data.messages);
+        } catch (e) {}
+    };
+    setInterval(refreshLive, 25000);
+}
+
+const chat = document.querySelector('[data-chat]');
+const chatForm = document.querySelector('[data-chat-form]');
+if (chat && chatForm) {
+    const box = chatForm.querySelector('textarea');
+    const scrollDown = () => (chat.scrollTop = chat.scrollHeight);
+    const seen = new Set();
+
+    const bubble = (message) => {
+        chat.querySelector('[data-chat-empty]')?.remove();
+        const el = document.createElement('div');
+        el.className = 'bubble' + (message.mine ? ' bubble-mine' : '');
+        el.dir = 'auto';
+        const body = document.createElement('span');
+        body.className = 'whitespace-pre-line';
+        body.textContent = message.body;
+        const time = document.createElement('span');
+        time.className = 'bubble-time';
+        time.textContent = message.time;
+        el.append(body, time);
+        chat.append(el);
+        return el;
+    };
+
+    const poll = async () => {
+        try {
+            const response = await fetch(`${chat.dataset.pollUrl}?after=${chat.dataset.lastId}`, { headers: { Accept: 'application/json' } });
+            if (!response.ok) return;
+            const { messages } = await response.json();
+            messages.forEach((message) => {
+                chat.dataset.lastId = Math.max(Number(chat.dataset.lastId), message.id);
+                if (seen.has(message.id)) return;
+                seen.add(message.id);
+                bubble(message);
+            });
+            if (messages.length) scrollDown();
+        } catch (e) {}
+    };
+
+    chatForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const text = box.value.trim();
+        if (!text) return;
+        // show it at once, the server confirms
+        const pending = bubble({ mine: true, body: text, time: '…' });
+        box.value = '';
+        scrollDown();
+        try {
+            const response = await fetch(chatForm.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                body: new URLSearchParams({ body: text }),
+            });
+            if (!response.ok) throw new Error(response.status);
+            const { message } = await response.json();
+            seen.add(message.id);
+            chat.dataset.lastId = Math.max(Number(chat.dataset.lastId), message.id);
+            pending.querySelector('.bubble-time').textContent = message.time;
+        } catch (e) {
+            pending.remove();
+            box.value = text;
+            toast(t('message_failed', 'The message was not sent. Check your connection and try again.'));
+        }
+    });
+
+    // Enter sends, Shift + Enter makes a new line
+    box.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            chatForm.requestSubmit();
+        }
+    });
+
+    scrollDown();
+    setInterval(() => !document.hidden && poll(), 4000);
+}
+
+// ---------- translate a quote (Arabic <-> English) inside the page ----------
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-translate]');
+    if (!button) return;
+    const box = button.closest('article')?.querySelector('[data-translation-box]');
+    if (!box) return;
+
+    // second press hides it again
+    if (box.dataset.done) {
+        box.classList.toggle('hidden');
+        return;
+    }
+    // status lines follow the page language; the translation itself keeps its own direction
+    box.dataset.dir ??= box.dir;
+    box.dir = document.documentElement.dir || 'auto';
+    box.classList.remove('hidden');
+    box.textContent = t('translating', 'Translating…');
+    button.setAttribute('aria-busy', 'true');
+    try {
+        const response = await fetch(button.dataset.translate, { headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        box.dir = box.dataset.dir;
+        box.textContent = data.text;
+        const note = document.createElement('span');
+        note.className = 'mt-1 block text-[11px] text-tuwaiq-lilac';
+        note.textContent = data.note;
+        box.append(note);
+        box.dataset.done = '1';
+    } catch (error) {
+        box.textContent = error.message || t('translate_failed', 'Translation is not available right now. Please try again later.');
+    } finally {
+        button.removeAttribute('aria-busy');
+    }
+});
+
+// ---------- live preview of the quote look in the share / edit form ----------
+document.querySelectorAll('[data-style-picker]').forEach((picker) => {
+    const preview = picker.querySelector('[data-style-preview]');
+    const form = picker.closest('form');
+    const text = form.querySelector('textarea[name="content"]');
+    const update = () => {
+        const value = (name, fallback) => form.querySelector(`[name="style[${name}]"]:checked`)?.value || fallback;
+        preview.className = preview.className.replace(/\bqs-\S+/g, '').trim()
+            + ` qs-font-${value('font', 'almarai')} qs-size-${value('size', 'm')} qs-color-${value('color', 'default')} qs-align-${value('align', 'start')}`;
+        if (text?.value.trim()) preview.textContent = text.value.trim();
+    };
+    picker.addEventListener('change', update);
+    text?.addEventListener('input', update);
+    update();
+});
+
+// ---------- stories: auto-advance (10 or 15 s), hold to pause, tap sides to move ----------
+const storyViewer = document.querySelector('[data-story-viewer]');
+const storyData = document.querySelector('[data-story-data]');
+if (storyViewer && storyData) {
+    const groups = JSON.parse(storyData.textContent);
+    const $ = (sel) => storyViewer.querySelector(sel);
+    const isRtl = document.documentElement.dir === 'rtl';
+    let gi = 0, si = 0, elapsed = 0, last = 0, paused = false, frame = 0, opener = null;
+
+    const tick = (now) => {
+        if (!paused) elapsed += now - last;
+        last = now;
+        const story = groups[gi].stories[si];
+        const fill = $('[data-story-progress]').children[si]?.firstChild;
+        const part = Math.min(1, elapsed / (story.seconds * 1000));
+        if (fill) fill.style.width = `${part * 100}%`;
+        if (part >= 1) return next();
+        frame = requestAnimationFrame(tick);
+    };
+
+    const show = (index) => {
+        cancelAnimationFrame(frame);
+        si = index;
+        const group = groups[gi];
+        const story = group.stories[si];
+        [...$('[data-story-progress]').children].forEach((track, i) => (track.firstChild.style.width = i < si ? '100%' : '0'));
+        const text = $('[data-story-text]');
+        text.className = `quote-text text-2xl text-[#fff] ${story.classes}`;
+        text.dir = story.rtl ? 'rtl' : 'ltr';
+        text.textContent = story.rtl ? `«${story.content}»` : `“${story.content}”`;
+        $('[data-story-author]').textContent = story.author ? `— ${story.author}` : '';
+        $('[data-story-ago]').textContent = story.ago;
+        $('[data-story-left]').textContent = story.left;
+        const like = $('[data-story-like]');
+        if (like) like.setAttribute('aria-pressed', story.liked ? 'true' : 'false');
+        $('[data-story-likes]').textContent = story.likes;
+        const del = $('[data-story-delete]');
+        del.hidden = !group.mine;
+        del.action = story.deleteUrl;
+        elapsed = 0;
+        last = performance.now();
+        frame = requestAnimationFrame(tick);
+    };
+
+    const open = (index, startAt = 0) => {
+        gi = index;
+        const group = groups[gi];
+        $('[data-story-name]').textContent = group.name;
+        $('[data-story-profile]').href = group.profile;
+        const avatar = document.querySelector(`[data-story-open="${gi}"] .story-ring > *`);
+        $('[data-story-avatar]').replaceChildren(avatar ? avatar.cloneNode(true) : '');
+        $('[data-story-progress]').replaceChildren(...group.stories.map(() => {
+            const track = document.createElement('span');
+            track.className = 'story-bar-track';
+            track.append(Object.assign(document.createElement('span'), { className: 'story-bar-fill' }));
+            return track;
+        }));
+        storyViewer.hidden = false;
+        document.body.style.overflow = 'hidden';
+        setPaused(false);
+        show(startAt);
+    };
+
+    const close = () => {
+        cancelAnimationFrame(frame);
+        storyViewer.hidden = true;
+        document.body.style.overflow = '';
+        opener?.focus();
+    };
+
+    function next() {
+        if (si + 1 < groups[gi].stories.length) return show(si + 1);
+        if (gi + 1 < groups.length) return open(gi + 1);
+        close();
+    }
+
+    const prev = () => {
+        if (si > 0) return show(si - 1);
+        if (gi > 0) return open(gi - 1, groups[gi - 1].stories.length - 1);
+        show(0);
+    };
+
+    const setPaused = (value) => {
+        paused = value;
+        $('[data-story-pause]').setAttribute('aria-label', value ? t('play', 'Play') : t('pause', 'Pause'));
+        $('[data-story-pause]').style.opacity = value ? '0.6' : '1';
+    };
+
+    document.querySelectorAll('[data-story-open]').forEach((button) => button.addEventListener('click', () => {
+        opener = button;
+        open(Number(button.dataset.storyOpen));
+        $('[data-story-close]').focus();
+    }));
+    $('[data-story-close]').addEventListener('click', close);
+    // a long press pauses; it should not also move to the next story
+    let held = false;
+    $('[data-story-next]').addEventListener('click', () => (held ? (held = false) : next()));
+    $('[data-story-prev]').addEventListener('click', () => (held ? (held = false) : prev()));
+    $('[data-story-pause]').addEventListener('click', () => setPaused(!paused));
+
+    // hold anywhere on the story to pause it
+    const card = $('[data-story-card]');
+    let holdTimer;
+    card.addEventListener('pointerdown', (event) => {
+        if (event.target.closest('button:not(.story-tap), a, form')) return;
+        holdTimer = setTimeout(() => {
+            held = true;
+            setPaused(true);
+        }, 220);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((type) => card.addEventListener(type, () => {
+        clearTimeout(holdTimer);
+        if (paused && type !== 'pointerleave') setTimeout(() => setPaused(false), 0);
+    }));
+
+    storyViewer.addEventListener('click', (event) => event.target === storyViewer && close());
+    document.addEventListener('keydown', (event) => {
+        if (storyViewer.hidden) return;
+        if (event.key === 'Escape') close();
+        if (event.key === 'ArrowLeft') (isRtl ? next : prev)();
+        if (event.key === 'ArrowRight') (isRtl ? prev : next)();
+        if (event.key === ' ') {
+            event.preventDefault();
+            setPaused(!paused);
+        }
+    });
+
+    $('[data-story-like]')?.addEventListener('click', async () => {
+        const story = groups[gi].stories[si];
+        story.liked = !story.liked;
+        story.likes += story.liked ? 1 : -1;
+        $('[data-story-like]').setAttribute('aria-pressed', story.liked ? 'true' : 'false');
+        $('[data-story-likes]').textContent = story.likes;
+        try {
+            const response = await fetch(story.likeUrl, { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf } });
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            Object.assign(story, { liked: data.active, likes: data.count });
+            $('[data-story-likes]').textContent = data.count;
+        } catch (e) {
+            toast(t('save_failed', 'Could not save. Please try again.'));
+        }
+    });
+}
+
+// live preview in the "new story" window
+document.querySelectorAll('[data-story-form]').forEach((form) => {
+    const text = form.querySelector('textarea[name="content"]');
+    const preview = form.querySelector('[data-story-preview-text]');
+    const update = () => {
+        const font = form.querySelector('[name="style[font]"]:checked')?.value || 'almarai';
+        preview.className = `quote-text text-xl text-[#fff] qs-align-center qs-font-${font}`;
+        if (text.value.trim()) preview.textContent = text.value.trim();
+    };
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+});
+
+// ---------- first-visit tour: points at each main place, one step at a time ----------
+(() => {
+    const tour = QI.tour;
+    if (!tour) return;
+    let done = tour.done;
+    try {
+        done = done || localStorage.getItem('qi-tour-done') === '1';
+    } catch (e) {}
+
+    const visible = (el) => {
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+    };
+
+    const start = () => {
+        const steps = tour.steps
+            .map((step) => ({ ...step, el: step.target === 'intro' ? null : [...document.querySelectorAll(`[data-tour="${step.target}"]`)].find(visible) }))
+            .filter((step) => step.target === 'intro' || step.el);
+        if (!steps.length) return;
+
+        const layer = document.createElement('div');
+        layer.className = 'tour-layer';
+        layer.innerHTML = `<div class="tour-spot"></div>
+            <div class="tour-card" role="dialog" aria-modal="true" aria-live="polite">
+                <p class="tour-count"></p><h2 class="tour-title"></h2><p class="tour-text"></p>
+                <div class="tour-actions"><button type="button" class="tour-skip"></button>
+                <span class="flex gap-2"><button type="button" class="btn-ghost px-3 py-1.5 text-sm tour-back"></button>
+                <button type="button" class="btn-primary px-4 py-1.5 text-sm tour-next"></button></span></div></div>`;
+        document.body.append(layer);
+        const spot = layer.querySelector('.tour-spot');
+        const card = layer.querySelector('.tour-card');
+        layer.querySelector('.tour-skip').textContent = tour.skip;
+        layer.querySelector('.tour-back').textContent = tour.back;
+        let index = 0;
+
+        const finish = () => {
+            layer.remove();
+            window.removeEventListener('resize', place);
+            try {
+                localStorage.setItem('qi-tour-done', '1');
+            } catch (e) {}
+            if (root.dataset.signedIn === '1') savePrefs({ tour_done: true });
+        };
+
+        function place() {
+            const step = steps[index];
+            if (!step.el) {
+                spot.style.cssText = 'top:50%;left:50%;width:0;height:0';
+                card.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
+                return;
+            }
+            const r = step.el.getBoundingClientRect();
+            const pad = 6;
+            spot.style.cssText = `top:${r.top - pad}px;left:${r.left - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
+            const below = r.bottom + 16 + card.offsetHeight < innerHeight;
+            const left = Math.min(Math.max(12, r.left + r.width / 2 - card.offsetWidth / 2), innerWidth - card.offsetWidth - 12);
+            card.style.cssText = `left:${left}px;top:${below ? r.bottom + 14 : Math.max(12, r.top - card.offsetHeight - 14)}px`;
+        }
+
+        const show = () => {
+            const step = steps[index];
+            step.el?.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' });
+            layer.querySelector('.tour-count').textContent = tour.count.replace(':step', index + 1).replace(':total', steps.length);
+            layer.querySelector('.tour-title').textContent = step.title;
+            layer.querySelector('.tour-text').textContent = step.text;
+            layer.querySelector('.tour-back').hidden = index === 0;
+            layer.querySelector('.tour-next').textContent = index === steps.length - 1 ? tour.done_label : tour.next;
+            requestAnimationFrame(place);
+            setTimeout(place, 350);
+            layer.querySelector('.tour-next').focus();
+        };
+
+        layer.querySelector('.tour-next').addEventListener('click', () => (index === steps.length - 1 ? finish() : (index++, show())));
+        layer.querySelector('.tour-back').addEventListener('click', () => index > 0 && (index--, show()));
+        layer.querySelector('.tour-skip').addEventListener('click', finish);
+        layer.addEventListener('keydown', (event) => event.key === 'Escape' && finish());
+        window.addEventListener('resize', place);
+        show();
+    };
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('[data-tour-start]')) return;
+        document.querySelectorAll('[popover]:popover-open').forEach((p) => p.hidePopover());
+        if (tour.onHome) start();
+        else location.href = tour.homeUrl;
+    });
+
+    const asked = new URLSearchParams(location.search).has('tour');
+    if (tour.onHome && (asked || !done)) setTimeout(start, 600);
+})();
