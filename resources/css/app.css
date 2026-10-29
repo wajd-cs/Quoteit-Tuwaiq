@@ -160,6 +160,12 @@
     .bottom-tab.is-on {
         @apply font-bold text-tuwaiq-teal;
     }
+    .top-tab {
+        @apply hidden min-w-16 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1 text-[11px] font-semibold text-tuwaiq-lilac transition hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-tuwaiq-teal/50 lg:flex;
+    }
+    .top-tab.is-on {
+        @apply font-bold text-tuwaiq-teal;
+    }
     .bottom-plus {
         @apply -mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-tuwaiq-orange text-tuwaiq-night shadow-xl shadow-black/40 transition active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-orange/40;
     }
@@ -630,15 +636,19 @@ html[data-speaking='1'] .fab {
     padding: 18px;
 }
 .story-bar-track {
-    height: 3px;
+    display: block;
+    height: 4px;
     flex: 1;
     overflow: hidden;
-    border-radius: 3px;
-    background: rgb(255 255 255 / 0.3);
+    border-radius: 4px;
+    background: rgb(255 255 255 / 0.28);
 }
+/* the bar fills up while the story is on screen, so you can see when it ends */
 .story-bar-fill {
+    display: block;
     height: 100%;
     width: 0;
+    border-radius: 4px;
     background: #fff;
 }
 .story-tap {
@@ -647,6 +657,17 @@ html[data-speaking='1'] .fab {
     bottom: 0;
     width: 35%;
     z-index: 1;
+    -webkit-tap-highlight-color: transparent;
+}
+/* no grey box when tapping on a phone; keyboard users still get an outline */
+.story-viewer button,
+.story-viewer a {
+    -webkit-tap-highlight-color: transparent;
+}
+.story-tap:focus,
+.story-tap:focus-visible {
+    outline: none;
+    background: transparent;
 }
 .story-btn {
     display: inline-flex;

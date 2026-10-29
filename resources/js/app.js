@@ -127,8 +127,10 @@ document.addEventListener('click', async (event) => {
 // pick the most natural voice the device has for this language (no setting needed).
 // Neural voices (Edge "Online (Natural)", Apple "Premium", Google) sound close to a real person;
 // the old desktop voices sound robotic, so they are only used when nothing else exists.
-const HUMAN_VOICES = /natural|neural|premium|enhanced|siri|hamed|zariyah|shakir|aria|jenny|guy|ava|andrew|emma|brian|samantha|daniel|majed|tarik|laila/;
+const HUMAN_VOICES = /natural|neural|premium|enhanced|siri|hamed|zariyah|shakir|aria|jenny|guy|ava|andrew|emma|brian|samantha|daniel|majed|maged|tarik|laila|google/;
 const ROBOTIC_VOICES = /compact|espeak|naayf|hoda|david|zira|mark|hazel|george/;
+// joke voices that come with iPhones and Macs
+const NOVELTY_VOICES = /albert|bad news|bahh|bells|boing|bubbles|cellos|fred|good news|jester|junior|kathy|organ|ralph|superstar|trinoids|whisper|wobble|zarvox|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley/;
 
 function bestVoice(lang) {
     const base = lang.slice(0, 2).toLowerCase();
@@ -141,11 +143,14 @@ function bestVoice(lang) {
         if (voice.lang.toLowerCase() === lang.toLowerCase()) points += 2; // same country (ar-SA, en-US)
         if (!voice.localService) points += 1;
         if (ROBOTIC_VOICES.test(name)) points -= 6;
+        if (NOVELTY_VOICES.test(name)) points -= 20;
         return points;
     };
-    return window.speechSynthesis.getVoices()
-        .filter((v) => v.lang.toLowerCase().startsWith(base))
+    const best = window.speechSynthesis.getVoices()
+        .filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(base))
         .sort((a, b) => score(b) - score(a))[0];
+    // on phones the system's own voice is usually the clearest, so only pick one when it is clearly human
+    return best && HUMAN_VOICES.test(best.name.toLowerCase()) && !NOVELTY_VOICES.test(best.name.toLowerCase()) ? best : null;
 }
 
 // clean the text so it is read like a person would say it
@@ -194,9 +199,7 @@ function speak(button) {
     const utterances = parts.map((part) => {
         const utterance = new SpeechSynthesisUtterance(part);
         utterance.lang = lang;
-        // old robotic voices sound rushed; slow them a little
-        const calm = voice && HUMAN_VOICES.test(voice.name.toLowerCase()) ? 1 : 0.92;
-        utterance.rate = (parseFloat(root.dataset.speechRate) || 1) * calm;
+        utterance.rate = parseFloat(root.dataset.speechRate) || 1;
         utterance.pitch = 1;
         if (voice) utterance.voice = voice;
         return utterance;
@@ -1165,3 +1168,23 @@ document.querySelectorAll('[data-story-form]').forEach((form) => {
     const asked = new URLSearchParams(location.search).has('tour');
     if (tour.onHome && (asked || !done)) setTimeout(start, 600);
 })();
+
+// ---------- new message: search people by name ----------
+document.querySelectorAll('[data-people-search]').forEach((input) => {
+    const results = input.closest('[popover]')?.querySelector('[data-people-results]');
+    let timer = 0;
+    let run = 0;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const mine = ++run;
+            try {
+                const url = `${input.dataset.peopleSearch}?q=${encodeURIComponent(input.value.trim())}`;
+                const response = await fetch(url, { headers: { Accept: 'text/html' } });
+                if (response.ok && mine === run) results.innerHTML = await response.text();
+            } catch (error) {
+                // keep the last list if the connection drops
+            }
+        }, 250);
+    });
+});

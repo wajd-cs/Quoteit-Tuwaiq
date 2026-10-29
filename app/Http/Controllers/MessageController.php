@@ -13,6 +13,7 @@ class MessageController extends Controller
     {
         return view('messages.index', [
             'page' => 'Messages',
+            'following' => $request->user()->following()->orderBy('name')->get(),
             'conversations' => $this->conversationsFor($request->user()),
             'active' => null,
             'messages' => collect(),
@@ -29,10 +30,26 @@ class MessageController extends Controller
         return view('messages.index', [
             'page' => 'Messages',
             'conversations' => $this->conversationsFor($user),
+            'following' => $user->following()->orderBy('name')->get(),
             'active' => $conversation->load('userOne', 'userTwo'),
             'other' => $conversation->otherThan($user),
             'messages' => $conversation->messages()->latest('id')->limit(100)->get()->reverse()->values(),
         ]);
+    }
+
+    /**
+     * People to start a chat with: the ones you follow, or anyone whose name matches the search.
+     */
+    public function people(Request $request)
+    {
+        $me = $request->user();
+        $term = trim((string) $request->query('q', ''));
+
+        $people = $term === ''
+            ? $me->following()->orderBy('name')->get()
+            : User::query()->whereKeyNot($me->id)->whereLike('name', "%{$term}%")->orderBy('name')->limit(15)->get();
+
+        return view('messages.partials.people', ['people' => $people, 'term' => $term]);
     }
 
     /** "Message" button on a profile: open the chat with that person. */

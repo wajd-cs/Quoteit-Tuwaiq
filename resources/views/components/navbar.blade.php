@@ -20,17 +20,23 @@
 
         <div class="ms-auto flex items-center gap-1 sm:gap-1.5">
             {{-- pages (laptops; phones use the bar at the bottom) --}}
-            <a href="{{ route('home') }}" class="tab hidden lg:inline-flex {{ $page === 'Home' ? 'tab-active' : '' }}" data-tour="home">{{ __('Home') }}</a>
-            <a href="{{ route('gets-me') }}" class="tab hidden lg:inline-flex {{ $page === 'Gets me' ? 'tab-active' : '' }}" data-tour="gets-me">{{ __('Gets me') }}</a>
+            {{-- laptops: the same icons and words as the phone bar, only at the top --}}
+            <a href="{{ route('home') }}" @class(['top-tab', 'is-on' => $page === 'Home']) data-tour="home">
+                <x-icon name="home" class="h-6 w-6" /><span>{{ __('Home') }}</span>
+            </a>
+            <a href="{{ route('gets-me') }}" @class(['top-tab', 'is-on' => $page === 'Gets me']) data-tour="gets-me">
+                <x-icon name="sparkles" class="h-6 w-6" /><span>{{ __('Gets me') }}</span>
+            </a>
             @auth
-                {{-- an envelope on smaller laptops, the word on wide screens --}}
-                <a href="{{ route('messages.index') }}" class="tab relative hidden items-center gap-1.5 lg:inline-flex {{ $page === 'Messages' ? 'tab-active' : '' }}" aria-label="{{ __('Messages') }}" title="{{ __('Messages') }}" data-tour="messages">
-                    <x-icon name="chat" class="h-5 w-5 xl:hidden" />
-                    <span class="hidden xl:inline">{{ __('Messages') }}</span>
-                    <span class="count-badge max-xl:absolute max-xl:-top-1 max-xl:-end-1" data-live="messages" @if (! $unreadMessages) hidden @endif>{{ $unreadMessages }}</span>
+                <a href="{{ route('messages.index') }}" @class(['top-tab', 'is-on' => $page === 'Messages']) data-tour="messages">
+                    <span class="relative"><x-icon name="chat" class="h-6 w-6" />
+                        <span class="count-badge absolute -top-1.5 -end-2.5" data-live="messages" @if (! $unreadMessages) hidden @endif>{{ $unreadMessages }}</span></span>
+                    <span>{{ __('Messages') }}</span>
                 </a>
             @endauth
-            <a href="{{ route('insights') }}" class="tab hidden lg:inline-flex {{ $page === 'Insights' ? 'tab-active' : '' }}" data-tour="insights">{{ __('Insights') }}</a>
+            <a href="{{ route('insights') }}" @class(['top-tab', 'is-on' => $page === 'Insights']) data-tour="insights">
+                <x-icon name="chart-bar" class="h-6 w-6" /><span>{{ __('Insights') }}</span>
+            </a>
 
             {{-- smart search on its own, so it stands out --}}
             <a href="{{ route('search') }}" class="search-link {{ $page === 'Search' ? 'is-active' : '' }}" title="{{ __('Smart search') }}" aria-label="{{ __('Smart search') }}" data-tour="search">

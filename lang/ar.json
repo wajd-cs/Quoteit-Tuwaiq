@@ -657,5 +657,11 @@
     "Skip": "تخطي",
     "Done": "تم",
     ":step of :total": ":step من :total",
-    "Every colour is picked to stay easy to read.": "كل الألوان مختارة لتبقى واضحة وسهلة القراءة."
+    "Every colour is picked to stay easy to read.": "كل الألوان مختارة لتبقى واضحة وسهلة القراءة.",
+    "New message": "رسالة جديدة",
+    "Who do you want to message?": "مين تبي تراسل؟",
+    "Type a name…": "اكتب اسم الشخص…",
+    "People you follow show first. Type to find anyone else.": "يظهر أولًا الناس اللي تتابعهم، واكتب الاسم للبحث عن أي شخص.",
+    "No friends to message yet. Follow people, or search for a name above.": "لا يوجد أصدقاء لمراسلتهم بعد. تابع أشخاصًا، أو ابحث بالاسم في الأعلى.",
+    "No one found with this name.": "لا يوجد أحد بهذا الاسم."
 }

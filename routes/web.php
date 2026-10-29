@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
 
     // messages
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/people', [MessageController::class, 'people'])->name('messages.people');
     Route::post('/messages/with/{user}', [MessageController::class, 'start'])->name('messages.start');
     Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
     Route::post('/messages/{conversation}', [MessageController::class, 'store'])->name('messages.store');

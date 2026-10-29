@@ -251,3 +251,21 @@ test('guests get the tour too and can replay it from the footer', function () {
         ->assertSee('data-tour-start', false)
         ->assertSee('data-tour="signup"', false);
 });
+
+test('a new message shows the people you follow, or anyone found by name', function () {
+    $me = User::factory()->create();
+    $friend = User::factory()->create(['name' => 'Sara']);
+    User::factory()->create(['name' => 'Omar']);
+
+    $this->actingAs($me)->get(route('messages.people'))
+        ->assertOk()
+        ->assertSee(__('No friends to message yet. Follow people, or search for a name above.'));
+
+    $me->following()->attach($friend);
+    $this->actingAs($me)->get(route('messages.index'))->assertSee('id="new-chat"', false)->assertSee('Sara');
+    $this->actingAs($me)->get(route('messages.people'))->assertSee('Sara')->assertDontSee('Omar');
+    $this->actingAs($me)->get(route('messages.people', ['q' => 'oma']))->assertSee('Omar')->assertSee(route('messages.start', User::firstWhere('name', 'Omar')), false);
+    $this->actingAs($me)->get(route('messages.people', ['q' => 'nobody']))->assertSee(__('No one found with this name.'));
+    auth()->logout();
+    $this->get(route('messages.people'))->assertRedirect(route('login'));
+});

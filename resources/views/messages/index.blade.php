@@ -4,9 +4,12 @@
 @section('content')
     @php $me = auth()->user(); @endphp
     <div class="mx-auto max-w-6xl px-4 pt-8">
-        <div @class(['mb-6', 'hidden lg:block' => $active])>
-            <h1 class="text-3xl font-bold text-white">{{ __('Messages') }}</h1>
-            <p class="mt-1 text-tuwaiq-lilac">{{ __('Private chats inside QuoteIt. Only the two of you can read them.') }}</p>
+        <div @class(['mb-6 flex flex-wrap items-end justify-between gap-3', 'hidden lg:flex' => $active])>
+            <div>
+                <h1 class="text-3xl font-bold text-white">{{ __('Messages') }}</h1>
+                <p class="mt-1 text-tuwaiq-lilac">{{ __('Private chats inside QuoteIt. Only the two of you can read them.') }}</p>
+            </div>
+            <button type="button" popovertarget="new-chat" class="btn-primary px-4 py-2 text-sm"><x-icon name="plus" /> {{ __('New message') }}</button>
         </div>
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
@@ -74,6 +77,31 @@
                     {{ __('Choose a chat to read it.') }}
                 </section>
             @endif
+        </div>
+    </div>
+
+    {{-- yellow + on laptops (phones use the + in the bottom bar) --}}
+    <button type="button" popovertarget="new-chat" aria-label="{{ __('New message') }}" title="{{ __('New message') }}"
+        class="fab fixed end-6 bottom-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-tuwaiq-orange text-tuwaiq-night shadow-xl shadow-black/40 transition hover:scale-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-tuwaiq-orange/40">
+        <x-icon name="plus" class="h-8 w-8" />
+    </button>
+
+    {{-- new message: people you follow, or search anyone by name --}}
+    <div id="new-chat" popover class="modal">
+        <div class="space-y-4 p-6">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-white">{{ __('New message') }}</h2>
+                <button type="button" popovertarget="new-chat" popovertargetaction="hide" class="action" aria-label="{{ __('Close') }}"><x-icon name="x" /></button>
+            </div>
+            <div>
+                <label for="people-search" class="label">{{ __('Who do you want to message?') }}</label>
+                <input id="people-search" type="search" dir="auto" autocomplete="off" class="input" placeholder="{{ __('Type a name…') }}"
+                    data-people-search="{{ route('messages.people') }}">
+                <p class="hint">{{ __('People you follow show first. Type to find anyone else.') }}</p>
+            </div>
+            <div class="max-h-[50vh] overflow-y-auto" data-people-results aria-live="polite">
+                @include('messages.partials.people', ['people' => $following, 'term' => ''])
+            </div>
         </div>
     </div>
 @endsection

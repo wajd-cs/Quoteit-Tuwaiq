@@ -10,13 +10,18 @@
         <a href="{{ route('gets-me') }}" @class(['bottom-tab', 'is-on' => $page === 'Gets me']) data-tour="gets-me">
             <x-icon name="sparkles" class="h-6 w-6" /><span>{{ __('Gets me') }}</span>
         </a>
-        <button type="button" popovertarget="quote-popup" class="bottom-plus" aria-label="{{ __('Share a quote') }}" data-tour="share">
+        {{-- on the Messages page the + starts a new chat; everywhere else it shares a quote --}}
+        @if ($page === 'Messages')
+            <button type="button" popovertarget="new-chat" class="bottom-plus" aria-label="{{ __('New message') }}">
+        @else
+            <button type="button" popovertarget="quote-popup" class="bottom-plus" aria-label="{{ __('Share a quote') }}" data-tour="share">
+        @endif
             <x-icon name="plus" class="h-7 w-7" />
         </button>
-        {{-- just the icon here, so the bar stays calm on small screens --}}
-        <a href="{{ route('messages.index') }}" @class(['bottom-tab justify-center', 'is-on' => $page === 'Messages']) aria-label="{{ __('Messages') }}" title="{{ __('Messages') }}" data-tour="messages">
-            <span class="relative"><x-icon name="chat" class="h-7 w-7" />
+        <a href="{{ route('messages.index') }}" @class(['bottom-tab', 'is-on' => $page === 'Messages']) data-tour="messages">
+            <span class="relative"><x-icon name="chat" class="h-6 w-6" />
                 <span class="count-badge absolute -top-1.5 -end-2.5" data-live="messages" @if (! $unread) hidden @endif>{{ $unread }}</span></span>
+            <span>{{ __('Messages') }}</span>
         </a>
         <button type="button" popovertarget="user-menu" @class(['bottom-tab', 'is-on' => in_array($page, ['Profile', 'Edit profile'], true)]) data-tour="account">
             <x-icon name="user" class="h-6 w-6" /><span>{{ __('Me') }}</span>
